@@ -17,14 +17,52 @@ def run_test_command(json_path, docker_image_name):
         json_path
     ]
     try:
-        result = subprocess.run(' '.join(cmd), shell=True, check=True, 
-                              capture_output=True, text=True)
-        print(f"Successfully processed {json_path}")
-        print(result.stdout)
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"Error processing {json_path}: {e}")
-        print(e.stderr)
+        # Use Popen to get real-time output
+        process = subprocess.Popen(
+            ' '.join(cmd),
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            universal_newlines=True
+        )
+
+        # Capture output in real-time
+        stdout_output = []
+        stderr_output = []
+        while True:
+            stdout_line = process.stdout.readline()
+            stderr_line = process.stderr.readline()
+            
+            if stdout_line:
+                print(stdout_line.strip())
+                stdout_output.append(stdout_line)
+            if stderr_line:
+                print(stderr_line.strip(), file=sys.stderr)
+                stderr_output.append(stderr_line)
+            
+            if process.poll() is not None:
+                break
+
+        # Get any remaining output
+        stdout, stderr = process.communicate()
+        if stdout:
+            print(stdout.strip())
+            stdout_output.append(stdout)
+        if stderr:
+            print(stderr.strip(), file=sys.stderr)
+            stderr_output.append(stderr)
+
+        if process.returncode == 0:
+            print(f"Successfully processed {json_path}")
+            return True
+        else:
+            print(f"Error processing {json_path}: Return code {process.returncode}")
+            return False
+
+    except Exception as e:
+        print(f"Error processing {json_path}: {str(e)}")
         return False
 
 def run():

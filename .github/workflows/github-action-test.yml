@@ -29,8 +29,20 @@ jobs:
         docker build . -f Dockerfile.nodejs -t test/nodejs
         docker build . -f Dockerfile.python -t test/python
 
-    - name: Use the current version of the GitHub acttion 
+    - name: Use the current version of the GitHub acttion (NodeJS)
       uses: ./
       with:
         suiteFileArray: '["test1.json", "test2.json"]'
-        dockerImageName: 'test/nodejs'
+        dockerImageName: 'public.ecr.aws/lambda/nodejs:22'
+        taskFolder: 'github-action-test/tasks'
+
+    - name: Use the current version of the GitHub acttion (Python)
+      uses: ./
+      with:
+        suiteFileArray: '["test1.json", "test2.json"]'
+        dockerImageName: 'public.ecr.aws/lambda/python:3.132'
+        taskFolder: 'github-action-test/tasks'
+
+
+
+        
