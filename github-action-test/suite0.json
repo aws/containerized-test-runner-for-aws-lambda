@@ -1,0 +1,38 @@
+{
+    "tests": [
+        {
+            "name": "test_ping",
+            "handler": "core.ping",
+            "environmentVariables": {
+                "TEST_ENVIRONMENT_VARIABLE": "test_env"
+            },
+            "request": {
+                "msg": "message"
+            },
+            "assertions": [
+                {
+                    "response": {
+                        "msg": "pong[message]"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "test_ping2",
+            "handler": "core.ping",
+            "environmentVariables": {
+                "TEST_ENVIRONMENT_VARIABLE": "test_env"
+            },
+            "request": {
+                "msg": "message"
+            },
+            "assertions": [
+                {
+                    "response": {
+                        "msg": "pong[message]"
+                    }
+                }
+            ]
+        }
+    ]
+}

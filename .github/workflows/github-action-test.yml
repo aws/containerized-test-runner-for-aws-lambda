@@ -1,0 +1,21 @@
+name: GitHub Action test 
+
+on:
+  push:
+    branches: [ "*" ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build test images
+      run: cd github-action-test && docker build . -t test/nodejs && docker build . -t test/python
+
+    - name: Use the current version of the GitHub acttion 
+      uses: ./
+      with:
+        suiteFileArray: '["test1.json", "test2.json"]'

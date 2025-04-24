@@ -1,0 +1,28 @@
+{
+    "tests": [
+        {
+            "name": "core | handler not found",
+            "handler": "core.not_exists",
+            "request": {
+                "msg": "message"
+            },
+            "assertions": [
+                {
+                    "errorType": "Runtime.HandlerNotFound"
+                }
+            ]
+        },
+        {
+            "name": "core | import module exception",
+            "handler": "import_module_exception.handler",
+            "request": {
+                "msg": "message"
+            },
+            "assertions": [
+                {
+                    "errorType": "Runtime.ImportModuleError"
+                }
+            ]
+        }
+    ]
+}
