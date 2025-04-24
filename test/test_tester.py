@@ -1,6 +1,6 @@
 import unittest
 
-from lambda_byol_test_harness.tester import AssertionEvaluator, ExecutionTestFailed, Response, ErrorResponse, Resource, InvalidResource
+from containerized_test_runner.tester import AssertionEvaluator, ExecutionTestFailed, Response, ErrorResponse, Resource, InvalidResource
 
 
 class TestTester(unittest.TestCase):

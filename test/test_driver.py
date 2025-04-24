@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from lambda_byol_test_harness.tester import InvalidResource
+from containerized_test_runner.tester import InvalidResource
 from mock_driver import MockDriver
 
 class TestDriver(unittest.TestCase):

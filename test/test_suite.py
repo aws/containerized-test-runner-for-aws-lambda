@@ -1,6 +1,6 @@
 import unittest
 import os
-from lambda_byol_test_harness.suiteloader import SuiteLoader
+from containerized_test_runner.suiteloader import SuiteLoader
 
 
 class TestSuiteLoader(unittest.TestCase):

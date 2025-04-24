@@ -7,8 +7,8 @@ import time
 
 logging.getLogger("urllib3").propagate = False
 
-from lambda_byol_test_harness.tester import AssertionEvaluator, ExecutionTestSucceeded, ExecutionTestFailed, Resource, InvalidResource, Response, ErrorResponse, InvalidResourceError
-from lambda_byol_test_harness.driver import Driver
+from .tester import AssertionEvaluator, ExecutionTestSucceeded, ExecutionTestFailed, Resource, InvalidResource, Response, ErrorResponse, InvalidResourceError
+from .driver import Driver
 
 RUNTIME_HOST_CONNECTION_TIMEOUT = 120
 
