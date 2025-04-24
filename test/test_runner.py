@@ -2,7 +2,7 @@ import unittest
 import os
 import json
 
-from lambda_byol_test_harness.runner import Runner
+from containerized_test_runner.runner import Runner
 from mock_driver import MockDriver
 
 class TestRunner(unittest.TestCase):

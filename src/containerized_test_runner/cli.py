@@ -6,7 +6,7 @@ import time
 import glob
 from socket import gethostname
 
-from lambda_byol_test_harness import Runner, ExecutionTestResults, SuiteLoader
+from containerized_test_runner import Runner, ExecutionTestResults, SuiteLoader
 from .docker import DockerDriver
 
 logger = logging.getLogger("test-harness")

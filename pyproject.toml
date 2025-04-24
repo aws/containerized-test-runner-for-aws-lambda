@@ -3,13 +3,13 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [project]
-name = "lambda_byol_test_harness"
+name = "containerized_test_runner"
 version = "0.1.0"
 description = "GitHub Action Containerized Test Runner for AWS Lambda"
 authors = [
     {name = "Maxime David", email = "maxday@amazon.com"},
 ]
-packages = [{include = "lambda_byol_test_harness", from = "src"}] 
+packages = [{include = "containerized_test_runner", from = "src"}] 
 
 requires-python = ">=3.11,<3.12" 
 dependencies = [
@@ -29,7 +29,7 @@ test = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["lambda_byol_test_harness*"] 
+include = ["containerized_test_runner*"] 
 
 [tool.pytest]
 testpaths = ["test"]
