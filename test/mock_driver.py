@@ -1,8 +1,8 @@
 import logging
 import os
 
-from lambda_byol_test_harness.driver import Driver
-from lambda_byol_test_harness.tester import ExecutionTestSucceeded, ExecutionTestFailed, ExecutionTestSkipped
+from containerized_test_runner.driver import Driver
+from containerized_test_runner.tester import ExecutionTestSucceeded, ExecutionTestFailed, ExecutionTestSkipped
 
 class MockDriver(Driver):
 
