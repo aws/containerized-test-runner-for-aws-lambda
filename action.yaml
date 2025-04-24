@@ -1,0 +1,34 @@
+name: 'Containerized Test Runner For AWS Lambda'
+description: 'Run AWS Lambda Runtime Interface Emulator (RIE) with a given payload'
+author: 'Maxime David <maxday@amazon.com>'
+
+inputs:
+  dockerImageName:
+    descrption: 'Name of the image'
+    required: true
+  suiteFileArray:
+    description: 'Array of suite files'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        pip install requests docker
+    
+    - name: Run test
+      shell: bash
+      run: python $GITHUB_ACTION_PATH/run.py
+      env:
+        INPUT_SUITE_FILE_ARRAY: ${{ inputs.suiteFileArray }}
+        DOCKER_IMAGE_NAME: ${{ inputs.dockerImageName }}
