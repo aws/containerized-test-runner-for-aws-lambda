@@ -1,4 +1,4 @@
-export const handler = async (event, context) => {
+export const ping = async (event) => {
     return {
         msg: `pong[${event.msg}]`
     };
