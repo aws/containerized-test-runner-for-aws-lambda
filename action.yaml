@@ -26,9 +26,9 @@ runs:
         python-version: '3.11'
 
     - name: Install dependencies
-      shell: bash
       run: |
-        pip install requests docker
+        python -m pip install --upgrade pip
+        pip install .
     
     - name: Run test
       shell: bash
