@@ -1,0 +1,58 @@
+{
+  "template":{
+    "memory": ["128mb", "512mb", "1024mb"],
+    "runtime": ["python-2.7", "python-3.6", "python-3.7"]
+  },
+  "default": {
+    "task": "/tasks/python.mytask"
+  },
+  "tests": [
+    {
+      "name": "test_echo",
+      "handler": "core.echo",
+      "environmentVariables": {
+        "TEST_ENVIRONMENT_VARIABLE": "test_env"
+      },
+      "request": {
+        "msg": "message"
+      },
+      "assertions": [
+        {
+          "response": { "msg": "message" }
+        }
+      ]
+    },
+    {
+      "name": "test_echo_python27",
+      "runtime": "python-2.7",
+      "handler": "core.echo",
+      "environmentVariables": {
+        "TEST_ENVIRONMENT_VARIABLE": "test_env"
+      },
+      "request": {
+        "msg": "message"
+      },
+      "assertions": [
+        {
+          "response": { "msg": "message" }
+        }
+      ]
+    },
+    {
+      "name": "test_echo_512mb",
+      "memory": "512mb",
+      "handler": "core.echo",
+      "environmentVariables": {
+        "TEST_ENVIRONMENT_VARIABLE": "test_env"
+      },
+      "request": {
+        "msg": "message"
+      },
+      "assertions": [
+        {
+          "response": { "msg": "message" }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "default": {
+    "task": "/tasks/python37.zip",
+    "runtime": "python-3.7"
+  },
+  "resources": {
+    "payload": {
+      "contentType": "application/json",
+      "transform": ".*42",
+      "data": "a"
+    }
+  },
+  "tests": [
+    {
+      "name": "test_generated_payload",
+      "handler": "core.echo",
+      "request.ref": "payload",
+      "assertions": [
+        {
+          "response.ref": "payload"
+        }
+      ]
+    }
+  ]
+}

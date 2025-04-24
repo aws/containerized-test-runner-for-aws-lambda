@@ -1,0 +1,29 @@
+{
+  "default": {
+    "task": "/tasks/python37.zip",
+    "runtime": "python-3.7"
+  },
+  "resources": {
+    "default_env": {
+      "contentType": "application/json",
+      "data": {
+        "TEST_ENVIRONMENT_VARIABLE": "test_env_inline"
+      }
+    }
+  },
+  "tests": [
+    {
+      "name": "test_load_env",
+      "handler": "core.get_env",
+      "environmentVariables.ref": "default_env",
+      "request": "TEST_ENVIRONMENT_VARIABLE",
+      "assertions": [
+        {
+          "response": {
+            "env": "test_env_inline"
+          }
+        }
+      ]
+    }
+  ]
+}

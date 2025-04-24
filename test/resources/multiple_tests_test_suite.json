@@ -1,0 +1,54 @@
+{
+  "default": {
+    "task": "/tasks/python37.zip",
+    "runtime": "python-3.7"
+  },
+  "tests": [
+    {
+      "name": "test_echo",
+      "handler": "echo",
+      "request": {
+        "msg": "message"
+      },
+      "assertions": [
+        {
+          "response": { "msg": "message" }
+        }
+      ]
+    },
+    {
+      "request": {
+        "msg": "λ"
+      },
+      "assertions": [
+        {
+          "response": { "msg": "λ" }
+        }
+      ]
+    },
+    {
+      "name": "test_exit",
+      "handler": "error",
+      "request": "",
+      "assertions": [
+        {
+          "error": "ErrorInvokeHandler",
+          "transform": ".errorType"
+        }
+      ]
+    },
+    {
+      "name": "test_get_env",
+      "handler": "skip",
+      "environmentVariables": {
+        "TEST_ENVIRONMENT_VARIABLE": "inline-string"
+      },
+      "request": "TEST_ENVIRONMENT_VARIABLE",
+      "assertions": [
+        {
+          "response": { "env": "inline-string" }
+        }
+      ]
+    }
+  ]
+}
