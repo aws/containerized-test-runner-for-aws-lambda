@@ -3,7 +3,7 @@ import json
 import subprocess
 import sys
 
-def run_test_command(json_path, docker_image_name):
+def run_test_command(json_path, docker_image_name, task_folder):
     """Run the test command for a specific JSON file path."""
     cmd = [
         'python',
@@ -13,7 +13,7 @@ def run_test_command(json_path, docker_image_name):
         docker_image_name,
         '--debug',
         '--task-root',
-        '/tmp',
+        task_folder,
         json_path
     ]
     try:
@@ -73,6 +73,9 @@ def run():
 
         # Get the docker image name
         docker_image_name = os.environ.get('DOCKER_IMAGE_NAME', '')
+
+        # Get the task folder
+        task_folder = os.environ.get('TASK_FOLDER', '')
 
         if not isinstance(suite_files, list):
             raise ValueError("Input must be a JSON array")
