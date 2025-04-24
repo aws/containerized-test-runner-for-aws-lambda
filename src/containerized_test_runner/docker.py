@@ -12,11 +12,10 @@ from .driver import Driver
 
 RUNTIME_HOST_CONNECTION_TIMEOUT = 120
 
-
 class DockerDriver(Driver):
     def __init__(self,  args):
         self.logger = logging.getLogger("DockerDriver")
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging.DEBUG)
         self.test_image = args.get("test_image")
         self.task_root = args.get("task_root")
         self.entrypoint = args.get("entrypoint")
@@ -138,7 +137,7 @@ class DockerDriver(Driver):
             self.logger.debug("cmd to run = %s", cmd)
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
             container_id = proc.communicate()[0].decode().rstrip()
-            time.sleep(1)
+            time.sleep(5)
             local_address = self._get_local_addr(container_id)
             response = requests.post(url="http://{}/2015-03-31/functions/function/invocations".format(local_address), data=req_bytes, headers=headers)
             response = self._render_response(response.content)
