@@ -1,5 +1,6 @@
 import os
 import json
+import subprocess
 import sys
 
 def run_test_command(json_path, docker_image_name):
@@ -16,7 +17,6 @@ def run_test_command(json_path, docker_image_name):
         json_path
     ]
     try:
-        # Using shell=True because we have '&&' in the command
         result = subprocess.run(' '.join(cmd), shell=True, check=True, 
                               capture_output=True, text=True)
         print(f"Successfully processed {json_path}")
