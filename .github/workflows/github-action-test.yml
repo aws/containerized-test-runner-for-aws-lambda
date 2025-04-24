@@ -23,12 +23,6 @@ jobs:
         pip install ".[test]"
         pip install .
 
-    - name: Build test images
-      run: |
-        cd github-action-test
-        docker build . -f Dockerfile.nodejs -t test/nodejs
-        docker build . -f Dockerfile.python -t test/python
-
     - name: Use the current version of the GitHub acttion (NodeJS)
       uses: ./
       with:
