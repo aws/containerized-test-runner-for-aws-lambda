@@ -23,13 +23,6 @@ jobs:
         pip install ".[test]"
         pip install .
 
-    - name: Use the current version of the GitHub acttion (NodeJS)
-      uses: ./
-      with:
-        suiteFileArray: '["./github-action-test/suite0.json"]'
-        dockerImageName: 'public.ecr.aws/lambda/nodejs:22'
-        taskFolder: './github-action-test/tasks/nodejs'
-
     - name: Use the current version of the GitHub acttion (Python) with wild card
       uses: ./
       with:
@@ -44,6 +37,12 @@ jobs:
         dockerImageName: 'public.ecr.aws/lambda/python:3.132'
         taskFolder: './github-action-test/tasks/python'
 
+    - name: Use the current version of the GitHub acttion (NodeJS)
+      uses: ./
+      with:
+        suiteFileArray: '["./github-action-test/suite0.json"]'
+        dockerImageName: 'public.ecr.aws/lambda/nodejs:22'
+        taskFolder: './github-action-test/tasks/nodejs'
 
 
         
