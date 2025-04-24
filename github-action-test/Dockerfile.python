@@ -1,2 +1,0 @@
-FROM public.ecr.aws/lambda/python:3.13
-ADD task/core.py /var/task/core.py
