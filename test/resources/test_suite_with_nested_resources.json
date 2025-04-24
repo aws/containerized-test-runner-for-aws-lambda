@@ -1,0 +1,27 @@
+{
+  "default": {
+    "task": "/tasks/python37.zip",
+    "runtime": "python-3.7"
+  },
+  "resources": {
+    "hello_world_payload": {
+      "contentType": "application/json",
+      "src": "resources/hello_world_payload.json"
+    }
+  },
+  "tests": [
+    {
+      "name": "test_load_env",
+      "handler": "core.get_env",
+      "environmentVariables": {
+        "name.ref": "name_env"
+      },
+      "request.ref": "hello_world_payload",
+      "assertions": [
+        {
+          "response.ref": "hello_world_payload"
+        }
+      ]
+    }
+  ]
+}

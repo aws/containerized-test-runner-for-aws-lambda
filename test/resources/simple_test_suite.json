@@ -1,0 +1,23 @@
+{
+  "default": {
+    "task": "/tasks/python37.zip",
+    "runtime": "python-3.7"
+  },
+  "tests": [
+    {
+      "name": "test_echo",
+      "handler": "core.echo",
+      "environmentVariables": {
+        "TEST_ENVIRONMENT_VARIABLE": "test_env"
+      },
+      "request": {
+        "msg": "message"
+      },
+      "assertions": [
+        {
+          "response": { "msg": "message" }
+        }
+      ]
+    }
+  ]
+}

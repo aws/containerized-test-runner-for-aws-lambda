@@ -1,0 +1,27 @@
+{
+  "default": {
+    "task": "/tasks/python37.zip",
+    "runtime": "python-3.7"
+  },
+  "tests": [
+    {
+      "name": "test_echo",
+      "handler": "core.echo",
+      "cognitoIdentity": {
+        "cognitoIdentityId": "cognito-id:cognito-id-1",
+        "cognitoIdentityPoolId" : "cognito-pool-id:cognito-pool-id1"
+      },
+      "environmentVariables": {
+        "TEST_ENVIRONMENT_VARIABLE": "test_env"
+      },
+      "request": {
+        "msg": "message"
+      },
+      "assertions": [
+        {
+          "response": { "msg": "message" }
+        }
+      ]
+    }
+  ]
+}
