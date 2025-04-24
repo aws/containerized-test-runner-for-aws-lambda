@@ -65,17 +65,22 @@ def run_test_command(json_path, docker_image_name, task_folder):
         print(f"Error processing {json_path}: {str(e)}")
         return False
 
+def get_required_env_var(var_name):
+    """Helper function to get required environment variables"""
+    value = os.environ.get(var_name)
+    if value is None:
+        raise ValueError(f"Required environment variable '{var_name}' is not set")
+    return value
+    
 def run():
     try:
+
+        suite_files_input = get_required_env_var('INPUT_SUITE_FILE_ARRAY')
+        docker_image_name = get_required_env_var('DOCKER_IMAGE_NAME')
+        task_folder = get_required_env_var('TASK_FOLDER')
+        
         # Get the array from the input and parse it
-        suite_files_input = os.environ.get('INPUT_SUITE_FILE_ARRAY', '[]')
         suite_files = json.loads(suite_files_input)
-
-        # Get the docker image name
-        docker_image_name = os.environ.get('DOCKER_IMAGE_NAME', '')
-
-        # Get the task folder
-        task_folder = os.environ.get('TASK_FOLDER', '')
 
         if not isinstance(suite_files, list):
             raise ValueError("Input must be a JSON array")
