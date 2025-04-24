@@ -88,7 +88,7 @@ def run():
         # Process each file
         success = True
         for file in suite_files:
-            if not run_test_command(file, docker_image_name):
+            if not run_test_command(file, docker_image_name, task_folder):
                 success = False
 
         # Exit with appropriate status code
