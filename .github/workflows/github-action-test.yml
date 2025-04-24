@@ -26,7 +26,7 @@ jobs:
     - name: Use the current version of the GitHub acttion (NodeJS)
       uses: ./
       with:
-        suiteFileArray: '["test1.json", "test2.json"]'
+        suiteFileArray: '["./github-action-test/suite0.json", "./github-action-test/suite1.json"]'
         dockerImageName: 'public.ecr.aws/lambda/nodejs:22'
         taskFolder: 'github-action-test/tasks'
 
