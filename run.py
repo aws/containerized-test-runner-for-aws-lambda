@@ -80,11 +80,11 @@ def run():
         task_folder = get_required_env_var('TASK_FOLDER')
         github_workspace = get_required_env_var('GITHUB_WORKSPACE')
 
-        task_folder = os.path.join(github_workspace, task_folder_relative)
+        task_folder_absolute = os.path.join(github_workspace, task_folder)
 
         # Ensure the resulting path exists
-        if not os.path.exists(task_folder):
-            raise ValueError(f"The resulting task folder path does not exist: {task_folder}")
+        if not os.path.exists(task_folder_absolute):
+            raise ValueError(f"The resulting task folder path does not exist: {task_folder_absolute}")
         
         # Get the array from the input and parse it
         suite_files = json.loads(suite_files_input)
@@ -95,7 +95,7 @@ def run():
         # Process each file
         success = True
         for file in suite_files:
-            if not run_test_command(file, docker_image_name, task_folder):
+            if not run_test_command(file, docker_image_name, task_folder_absolute):
                 success = False
 
         # Exit with appropriate status code
