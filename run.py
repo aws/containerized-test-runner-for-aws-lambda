@@ -14,6 +14,7 @@ def run_test_command(json_path, docker_image_name):
         '--debug',
         '--task-root',
         '',
+        '--suites',
         json_path
     ]
     try:
