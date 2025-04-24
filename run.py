@@ -78,6 +78,13 @@ def run():
         suite_files_input = get_required_env_var('INPUT_SUITE_FILE_ARRAY')
         docker_image_name = get_required_env_var('DOCKER_IMAGE_NAME')
         task_folder = get_required_env_var('TASK_FOLDER')
+        github_workspace = get_required_env_var('GITHUB_WORKSPACE')
+
+        task_folder = os.path.join(github_workspace, task_folder_relative)
+
+        # Ensure the resulting path exists
+        if not os.path.exists(task_folder):
+            raise ValueError(f"The resulting task folder path does not exist: {task_folder}")
         
         # Get the array from the input and parse it
         suite_files = json.loads(suite_files_input)
