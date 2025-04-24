@@ -15,7 +15,7 @@ RUNTIME_HOST_CONNECTION_TIMEOUT = 120
 class DockerDriver(Driver):
     def __init__(self,  args):
         self.logger = logging.getLogger("DockerDriver")
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.INFO)
         self.test_image = args.get("test_image")
         self.task_root = args.get("task_root")
         self.entrypoint = args.get("entrypoint")
