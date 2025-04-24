@@ -137,7 +137,7 @@ class DockerDriver(Driver):
             self.logger.debug("cmd to run = %s", cmd)
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
             container_id = proc.communicate()[0].decode().rstrip()
-            time.sleep(5)
+            time.sleep(1)
             local_address = self._get_local_addr(container_id)
             response = requests.post(url="http://{}/2015-03-31/functions/function/invocations".format(local_address), data=req_bytes, headers=headers)
             response = self._render_response(response.content)
