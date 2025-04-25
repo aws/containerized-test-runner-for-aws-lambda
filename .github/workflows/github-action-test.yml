@@ -30,9 +30,8 @@ jobs:
         dockerImageName: 'public.ecr.aws/lambda/python:3.13'
         taskFolder: './github-action-test/tasks/python'
 
-    - name: Clean up __pycache__
-      run: |
-        sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
+    - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
+      run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
 
     - name: Use the current version of the GitHub action (Python)
       uses: ./
@@ -41,9 +40,8 @@ jobs:
         dockerImageName: 'public.ecr.aws/lambda/python:3.13'
         taskFolder: './github-action-test/tasks/python'
 
-    - name: Clean up __pycache__
-      run: |
-        sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
+    - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
+      run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
   
     - name: Use the current version of the GitHub action (NodeJS)
       uses: ./
