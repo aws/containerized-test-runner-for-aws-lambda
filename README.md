@@ -1,11 +1,10 @@
-## My Project
+## Containerized Test Runner For Aws Lambda
 
-TODO: Fill this README out!
+This action runs containerized tests. This is useful for testing how the Runtime Interface Client responds to different events. This action is used by public runtimes.
 
-Be sure to:
+## Current status
 
-* Change the title in this README
-* Edit your repository description on GitHub
+This is an alpha release and not yet ready for production use.
 
 ## Security
 
