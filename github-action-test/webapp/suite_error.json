@@ -1,13 +1,10 @@
 {
     "tests": [
         {
-            "name": "test_ping",
-            "handler": "index",
+            "name": "test_error",
+            "handler": "error.js",
             "driver": "lite",
-            "environmentVariables": {
-                "TEST_ENVIRONMENT_VARIABLE": "test_env"
-            },
-            "hurl_file":"./echo.hurl",
+            "hurl_file":"./error.hurl",
             "assertions": [
                 {
                     "transform": "last | select(.error == \"Application.TimeoutListenError\") | .error",

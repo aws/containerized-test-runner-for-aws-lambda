@@ -69,7 +69,7 @@ class DockerLiteDriver(Driver):
         if self.entrypoint is not None:
             extra_docker_args += ["--entrypoint", self.entrypoint]
 
-        cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "0.0.0.0:0:3000", "-e", "AWS_LAMBDA_RUNTIME_API=localhost:9000", "-e", "AWS_LAMBDA_BETA_DEBUG=1"]
+        cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "0.0.0.0:0:3000", "-e", "AWS_LAMBDA_RUNTIME_API=localhost:9000", "-e", "AWS_LAMBDA_ENTRYPOINT={}".format(handler), "-e", "AWS_LAMBDA_BETA_DEBUG=1"]
 
         if self.task_root != None:
             cmd += ["-v", "{}:/var/task".format(self.task_root)]
@@ -87,7 +87,6 @@ class DockerLiteDriver(Driver):
 
         cmd += extra_docker_args
         cmd += [self.test_image]
-
         try:
             self.logger.debug("cmd to run = %s", cmd)
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -97,7 +96,6 @@ class DockerLiteDriver(Driver):
             init_cmd = ["docker", "exec", container_id, "curl", "-X", "POST", "-H", "Content-Type: application/json", "-d", "{}", "http://localhost:8080/test/init"]
             proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
             proc.communicate()
-
             local_address = self._get_local_addr(container_id)
             # hurl command
             hurl_command = ["docker", "run", "--network", "host", "--rm", "-v", "{}/..:/suite".format(self.task_root), self.hurl_image, "--variable", "host={}".format(local_address), "/suite/{}".format(hurl_file)]
