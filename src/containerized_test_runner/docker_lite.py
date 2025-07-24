@@ -109,18 +109,19 @@ class DockerLiteDriver(Driver):
                 universal_newlines=True
             )
             stdout, stderr = proc.communicate()
-            if stderr != "":
+            if "error: Assert" in stderr:
                 raise ExecutionTestFailed(test, ExecutionTestFailed.ASSERTION_FAILED, stderr)
 
         except Exception as e:
             raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Unknown error occurred (e={})".format(e))
         finally:
-            if self.logger.isEnabledFor(logging.DEBUG):
-                subprocess.run(["docker", "logs", container_id])
+            response = subprocess.run(["docker", "logs", container_id], capture_output=True, text=True)
             docker_kill_cmd = ["docker", "kill", container_id]
             subprocess.run(docker_kill_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
             self.logger.debug("Killed container [container_id = {}]".format(container_id))
-        return
+        response = self._render_response(response.stdout)
+        print(response)
+        return response
 
     def _to_resource_type(self, test, resource):
         try:
@@ -129,7 +130,32 @@ class DockerLiteDriver(Driver):
             raise ExecutionTestFailed(test, e.type, str(e))
         return resource
 
+    def _render_response(self, resp):
+        try:
+            resp = self._convert_json_lines_to_array(resp)
+            if "errorType" in resp:
+                resp = ErrorResponse(resp, resp["errorType"])
+            else:
+                resp = Response("application/json", resp)
+        except Exception as e:
+            print(e)
+            resp = Response("application/unknown", resp)
+        return resp
+
     def _get_local_addr(self, container_id):
         docker_port_cmd = ["docker", "port", container_id, "3000"]
         docker_port_proc = subprocess.Popen(docker_port_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
         return docker_port_proc.communicate()[0].decode().rstrip()
+
+    def _convert_json_lines_to_array(self, json_lines: str) -> list:
+        result = []
+        for line in json_lines.splitlines():
+            if line.strip():
+                try:
+                    json_obj = json.loads(line)
+                    result.append(json_obj)
+                except json.JSONDecodeError as e:
+                    print(f"Error parsing line: {line}")
+                    print(f"Error details: {e}")
+                    continue
+        return result

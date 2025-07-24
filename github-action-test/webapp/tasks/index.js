@@ -13,6 +13,6 @@ const server = http.createServer((req, res) => {
   }
 });
 
-server.listen(portNum, host, () => {
-  console.log(`Server is running on http://${host}:${portNum}`);
-});
+// server.listen(portNum, host, () => {
+//   console.log(`Server is running on http://${host}:${portNum}`);
+// });

@@ -8,7 +8,12 @@
                 "TEST_ENVIRONMENT_VARIABLE": "test_env"
             },
             "hurl_file":"./echo.hurl",
-            "assertions": []
+            "assertions": [
+                {
+                    "transform": "last | select(.error == \"Application.TimeoutListenError\") | .error",
+                    "response": "Application.TimeoutListenError"
+                }
+            ]
         }
     ]
 }
