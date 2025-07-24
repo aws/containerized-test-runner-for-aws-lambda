@@ -28,7 +28,7 @@ jobs:
       with:
         suiteFileArray: '["./github-action-test/suite*.json"]'
         dockerImageName: 'public.ecr.aws/lambda/python:3.13'
-        taskFolder: './github-action-test/tasks/python'
+        taskFolder: './github-action-test/lambda/tasks/python'
 
     - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
       run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
