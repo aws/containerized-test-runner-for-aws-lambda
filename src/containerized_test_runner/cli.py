@@ -82,7 +82,7 @@ def create_parser():
     parser = ArgumentParser()
     parser.add_argument("--debug", dest="debug", action="store_true")
     parser.add_argument("--test-image", help="docker image to test")
-    parser.add_argument("--mode", help="mode (lite or lambda)")
+    parser.add_argument("--driver", help="driver", default="DockerDriver")
     parser.add_argument("--hurl-image", help="hurl image with tag", default="ghcr.io/orange-opensource/hurl:latest")
     parser.add_argument("--task-root", default="/int-tests", help="location of task resources")
     parser.add_argument("suites", nargs='+')
@@ -93,11 +93,9 @@ def does_suite_have_tests(suite_results):
 
 def execute_tests(args):
     print(args)
-    if args.mode == "lite":
-        print("LITE MODE")
+    if args.driver == "DockerLiteDriver":
         driver = DockerLiteDriver(vars(args))
-    else:
-        print("OD MODE")
+    if args.driver == "DockerDriver":
         driver = DockerDriver(vars(args))
 
     with Runner(driver=driver, args=args) as app:

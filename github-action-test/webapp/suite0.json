@@ -3,7 +3,7 @@
         {
             "name": "test_ping",
             "handler": "index",
-            "mode":"lite",
+            "driver": "lite",
             "environmentVariables": {
                 "TEST_ENVIRONMENT_VARIABLE": "test_env"
             },
