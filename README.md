@@ -20,7 +20,7 @@ This project is licensed under the Apache-2.0 License.
 export INPUT_SUITE_FILE_ARRAY='["./github-action-test/webapp/suite0.json"]'
 export DOCKER_IMAGE_NAME='maxday/lite-tester'
 export TASK_FOLDER='./github-action-test/webapp/tasks'
-export MODE=lite
+export DRIVER=DockerLiteDriver
 export GITHUB_WORKSPACE="."
 
 <!-- install hurl -->

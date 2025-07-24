@@ -120,7 +120,6 @@ class DockerLiteDriver(Driver):
             subprocess.run(docker_kill_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
             self.logger.debug("Killed container [container_id = {}]".format(container_id))
         response = self._render_response(response.stdout)
-        print(response)
         return response
 
     def _to_resource_type(self, test, resource):

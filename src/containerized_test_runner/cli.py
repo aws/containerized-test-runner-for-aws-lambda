@@ -92,7 +92,6 @@ def does_suite_have_tests(suite_results):
     return len(suite_results.evaluated) > 0
 
 def execute_tests(args):
-    print(args)
     if args.driver == "DockerLiteDriver":
         driver = DockerLiteDriver(vars(args))
     if args.driver == "DockerDriver":
