@@ -9,8 +9,6 @@ def run_test_command(json_path, docker_image_name, task_folder, driver):
         'python',
         '-m',
         'containerized_test_runner.cli',
-        '--driver',
-        driver,
         '--test-image',
         docker_image_name,
         '--debug',
@@ -18,6 +16,9 @@ def run_test_command(json_path, docker_image_name, task_folder, driver):
         task_folder,
         json_path
     ]
+    if driver:
+        cmd += ['--driver', driver]
+    
     try:
         # Use Popen to get real-time output
         process = subprocess.Popen(
@@ -81,7 +82,7 @@ def run():
         docker_image_name = get_required_env_var('DOCKER_IMAGE_NAME')
         task_folder = get_required_env_var('TASK_FOLDER')
         github_workspace = get_required_env_var('GITHUB_WORKSPACE')
-        driver = get_required_env_var('DRIVER')
+        driver = os.environ.get('DRIVER')
 
         task_folder_absolute = os.path.join(github_workspace, task_folder)
 
