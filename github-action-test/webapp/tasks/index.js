@@ -1,8 +1,7 @@
 import http from 'http';
 
-// AWS_LAMBDA_HTTP_ENDPOINT environment variable format: "host:port"
-const [host, port] = process.env.AWS_LAMBDA_HTTP_ENDPOINT.split(':');
-const portNum = parseInt(port, 10);
+const host = "0.0.0.0";
+const portNum = 3000
 
 const server = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/echo') {
@@ -15,5 +14,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(portNum, host, () => {
-  console.log(`Server is running on http://${host}:${port}`);
+  console.log(`Server is running on http://${host}:${portNum}`);
 });

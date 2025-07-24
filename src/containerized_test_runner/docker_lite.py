@@ -17,6 +17,7 @@ class DockerLiteDriver(Driver):
         self.test_image = args.get("test_image")
         self.task_root = args.get("task_root")
         self.entrypoint = args.get("entrypoint")
+        self.hurl_image = args.get("hurl_image")
 
     def __str__(self):
         return "DockerDriver()"
@@ -24,18 +25,14 @@ class DockerLiteDriver(Driver):
     def fetch(self, index_suite):
         suite_content = index_suite["index"]
         handler = suite_content["handler"]
+        hurl_file = suite_content["hurl_file"]
         request = self._to_resource_type(suite_content, suite_content.get("request", {}))
         environment_variables = self._to_resource_type(suite_content, {})
-        client_context = self._to_resource_type(suite_content, {})
-        cognito_identity = self._to_resource_type(suite_content, {})
-        xray_trace_info = self._to_resource_type(suite_content, {})
         resp = self._capture(suite_content,
                              handler,
                              request,
                              environment_variables,
-                             client_context,
-                             cognito_identity,
-                             xray_trace_info)
+                             hurl_file)
         return resp.data
 
     def execute(self, test):
@@ -55,9 +52,7 @@ class DockerLiteDriver(Driver):
                              test["handler"],
                              req,
                              environment_variables,
-                             client_context,
-                             cognito_identity,
-                             xray_trace_info)
+                             test["hurl_file"])
 
         if "assertions" not in test:
             raise ExecutionTestFailed(test, ExecutionTestFailed.MISSING_ASSERTIONS, "No assertions provided in test {}".format(test_id))
@@ -79,9 +74,7 @@ class DockerLiteDriver(Driver):
                  handler,
                  request,
                  environment_variables,
-                 client_context,
-                 cognito_identity,
-                 xray_trace_info):
+                 hurl_file):
 
         self.logger.info("execute '%s'", test["name"])
 
@@ -89,7 +82,7 @@ class DockerLiteDriver(Driver):
         if self.entrypoint is not None:
             extra_docker_args += ["--entrypoint", self.entrypoint]
 
-        cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "127.0.0.1:0:8080", "-e", "AWS_LAMBDA_RUNTIME_API=localhost:9000"]
+        cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "0.0.0.0:0:3000", "-e", "AWS_LAMBDA_RUNTIME_API=localhost:9000", "-e", "AWS_LAMBDA_BETA_DEBUG=1"]
 
         if self.task_root != None:
             cmd += ["-v", "{}:/var/task".format(self.task_root)]
@@ -106,22 +99,51 @@ class DockerLiteDriver(Driver):
             ]
 
         cmd += extra_docker_args
-        cmd += [self.test_image, handler]
+        cmd += [self.test_image]
 
-        headers = {}
-        headers["Content-Type"] = request.content_type
-        
         try:
             self.logger.debug("cmd to run = %s", cmd)
             print("cmd")
             print(cmd)
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
             container_id = proc.communicate()[0].decode().rstrip()
+            print("my container id is {}", container_id)
             time.sleep(1)
+            # sending the init
+            init_cmd = ["docker", "exec", container_id, "curl", "-X", "POST", "-H", "Content-Type: application/json", "-d", "{}", "http://localhost:8080/test/init"]
+            proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            stdout, stderr = proc.communicate()
+            # Note: stdout and stderr will be bytes, you might need to decode them
+            stdout = stdout.decode('utf-8')
+            stderr = stderr.decode('utf-8')
+            print(stdout)
+            print(stderr)
+            print(container_id)
+
             local_address = self._get_local_addr(container_id)
-            print(local_address)
-            print(container_id)
-            print(container_id)
+            print("local address = {}", local_address)
+            # hurl command
+            hurl_command = ["docker", "run", "--network", "host", "--rm", "-v", "{}/..:/suite".format(self.task_root), self.hurl_image, "--variable", "host={}".format(local_address), "/suite/{}".format(hurl_file)]
+            print(hurl_command)
+            proc = subprocess.Popen(
+                hurl_command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True  # This automatically decodes the output
+            )
+            stdout, stderr = proc.communicate()
+
+            print("Hurl stdout:")
+            print(stdout)
+            
+            print("Hurl stderr:")
+            print(stderr)
+
+        
+
+
+                    
         except subprocess.CalledProcessError as e:
             raise ExecutionTestFailed(test, ExecutionTestFailed.COMMAND_FAILED, "Command return code (rc={})".format(e.returncode))
         except Exception as e:
@@ -132,9 +154,9 @@ class DockerLiteDriver(Driver):
             print("is enabled")
             subprocess.run(["docker", "logs", container_id])
 
-            docker_kill_cmd = ["docker", "kill", container_id]
-            subprocess.run(docker_kill_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-            self.logger.debug("Killed container [container_id = {}]".format(container_id))
+            # docker_kill_cmd = ["docker", "kill", container_id]
+            # subprocess.run(docker_kill_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+            # self.logger.debug("Killed container [container_id = {}]".format(container_id))
 
         return "OK"
 
@@ -157,6 +179,6 @@ class DockerLiteDriver(Driver):
         return resp
 
     def _get_local_addr(self, container_id):
-        docker_port_cmd = ["docker", "port", container_id, "8080"]
+        docker_port_cmd = ["docker", "port", container_id, "3000"]
         docker_port_proc = subprocess.Popen(docker_port_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
         return docker_port_proc.communicate()[0].decode().rstrip()

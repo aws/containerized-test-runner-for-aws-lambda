@@ -7,7 +7,7 @@
             "environmentVariables": {
                 "TEST_ENVIRONMENT_VARIABLE": "test_env"
             },
-            "hurlFile":"echo.hurl",
+            "hurl_file":"./echo.hurl",
             "assertions": []
         }
     ]

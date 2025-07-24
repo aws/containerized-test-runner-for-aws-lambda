@@ -1,0 +1,44 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "containerized_test_runner"
+version = "0.1.0"
+description = "GitHub Action Containerized Test Runner for AWS Lambda"
+authors = [
+    {name = "Maxime David", email = "maxday@amazon.com"},
+]
+packages = [{include = "containerized_test_runner", from = "src"}] 
+
+requires-python = ">=3.11,<3.12" 
+dependencies = [
+    "requests>=2.31.0",
+    "pyjq>=2.6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "black>=23.0",
+]
+test = [
+    "pytest",
+    "pyjq",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["containerized_test_runner*"] 
+
+[tool.pytest]
+testpaths = ["test"]
+python_files = ["test_*.py"]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
