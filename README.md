@@ -17,7 +17,7 @@ This project is licensed under the Apache-2.0 License.
 export INPUT_SUITE_FILE_ARRAY='["./github-action-test/webapp/suite_happy_path.json", "./github-action-test/webapp/suite_error.json"]'
 export DOCKER_IMAGE_NAME='maxday/lite-tester'
 export TASK_FOLDER='./github-action-test/webapp/tasks'
-export DRIVER=DockerLiteDriver
+export DRIVER=DockerWebAppDriver
 export GITHUB_WORKSPACE="."
 
 <!-- install hurl -->

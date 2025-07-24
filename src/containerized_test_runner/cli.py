@@ -8,7 +8,7 @@ from socket import gethostname
 
 from containerized_test_runner import Runner, ExecutionTestResults, SuiteLoader
 from .docker import DockerDriver
-from .docker_lite import DockerLiteDriver
+from .docker_webapp import DockerWebAppDriver
 
 logger = logging.getLogger("test-harness")
 
@@ -92,8 +92,8 @@ def does_suite_have_tests(suite_results):
     return len(suite_results.evaluated) > 0
 
 def execute_tests(args):
-    if args.driver == "DockerLiteDriver":
-        driver = DockerLiteDriver(vars(args))
+    if args.driver == "DockerWebAppDriver":
+        driver = DockerWebAppDriver(vars(args))
     if args.driver == "DockerDriver":
         driver = DockerDriver(vars(args))
 

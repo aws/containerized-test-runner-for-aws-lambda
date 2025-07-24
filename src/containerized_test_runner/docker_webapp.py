@@ -10,9 +10,9 @@ logging.getLogger("urllib3").propagate = False
 from .tester import AssertionEvaluator, ExecutionTestSucceeded, ExecutionTestFailed, Resource, InvalidResource, Response, ErrorResponse, InvalidResourceError
 from .driver import Driver
 
-class DockerLiteDriver(Driver):
+class DockerWebAppDriver(Driver):
     def __init__(self,  args):
-        self.logger = logging.getLogger("DockerLiteDriver")
+        self.logger = logging.getLogger("DockerWebAppDriver")
         self.logger.setLevel(logging.INFO)
         self.test_image = args.get("test_image")
         self.task_root = args.get("task_root")
@@ -20,7 +20,7 @@ class DockerLiteDriver(Driver):
         self.hurl_image = args.get("hurl_image")
 
     def __str__(self):
-        return "DockerLiteDriver()"
+        return "DockerWebAppDriver()"
 
     def fetch(self, index_suite):
         suite_content = index_suite["index"]

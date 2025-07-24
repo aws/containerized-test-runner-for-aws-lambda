@@ -1,5 +1,5 @@
 name: 'Containerized Test Runner For AWS Lambda'
-description: 'Run AWS Lambda Runtime Interface Emulator (RIE) with a given payload'
+description: 'Run Containerized Tests For AWS Lambda'
 author: 'Maxime David <maxday@amazon.com>'
 
 inputs:
@@ -12,6 +12,9 @@ inputs:
   suiteFileArray:
     description: 'Array of suite files'
     required: true
+  driver:
+    description: 'Driver to use'
+    required: false
   
 
 runs:
@@ -33,3 +36,4 @@ runs:
         INPUT_SUITE_FILE_ARRAY: ${{ inputs.suiteFileArray }}
         DOCKER_IMAGE_NAME: ${{ inputs.dockerImageName }}
         TASK_FOLDER: ${{ inputs.taskFolder }}
+        DRIVER: ${{ inputs.driver }}

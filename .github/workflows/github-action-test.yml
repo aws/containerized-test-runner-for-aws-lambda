@@ -31,9 +31,9 @@ jobs:
     - name: Use the current version of the GitHub action (Python)
       uses: ./
       with:
-        suiteFileArray: '["./github-action-test/suite0.json", "./github-action-test/suite1.json"]'
+        suiteFileArray: '["./github-action-test/lambda/suite0.json", "./github-action-test/lambda/suite1.json"]'
         dockerImageName: 'public.ecr.aws/lambda/python:3.13'
-        taskFolder: './github-action-test/tasks/python'
+        taskFolder: './github-action-test/lambda/tasks/python'
 
     - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
       run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
@@ -41,9 +41,17 @@ jobs:
     - name: Use the current version of the GitHub action (NodeJS)
       uses: ./
       with:
-        suiteFileArray: '["./github-action-test/suite0.json"]'
+        suiteFileArray: '["./github-action-test/lambda/suite0.json"]'
         dockerImageName: 'public.ecr.aws/lambda/nodejs:22'
-        taskFolder: './github-action-test/tasks/nodejs'
+        taskFolder: './github-action-test/lambda/tasks/nodejs'
+
+    - name: Use the current version of the GitHub action (Webapp)
+      uses: ./
+      with:
+        suiteFileArray: '["./github-action-test/webapp/suite_happy_path.json", "./github-action-test/webapp/suite_error.json"]'
+        dockerImageName: 'public.ecr.aws/lambda/nodejs:22'
+        taskFolder: './github-action-test/webapp/tasks'
+        driver: DockerWebAppDriver
 
 
         
