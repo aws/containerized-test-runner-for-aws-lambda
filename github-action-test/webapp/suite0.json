@@ -1,0 +1,14 @@
+{
+    "tests": [
+        {
+            "name": "test_ping",
+            "handler": "index",
+            "mode":"lite",
+            "environmentVariables": {
+                "TEST_ENVIRONMENT_VARIABLE": "test_env"
+            },
+            "hurlFile":"echo.hurl",
+            "assertions": []
+        }
+    ]
+}

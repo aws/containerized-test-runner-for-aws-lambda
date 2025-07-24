@@ -3,12 +3,14 @@ import json
 import subprocess
 import sys
 
-def run_test_command(json_path, docker_image_name, task_folder):
+def run_test_command(json_path, docker_image_name, task_folder, mode):
     """Run the test command for a specific JSON file path."""
     cmd = [
         'python',
         '-m',
         'containerized_test_runner.cli',
+        '--mode',
+        mode,
         '--test-image',
         docker_image_name,
         '--debug',
@@ -79,6 +81,7 @@ def run():
         docker_image_name = get_required_env_var('DOCKER_IMAGE_NAME')
         task_folder = get_required_env_var('TASK_FOLDER')
         github_workspace = get_required_env_var('GITHUB_WORKSPACE')
+        mode = get_required_env_var('MODE')
 
         task_folder_absolute = os.path.join(github_workspace, task_folder)
 
@@ -95,7 +98,7 @@ def run():
         # Process each file
         success = True
         for file in suite_files:
-            if not run_test_command(file, docker_image_name, task_folder_absolute):
+            if not run_test_command(file, docker_image_name, task_folder_absolute, mode):
                 success = False
 
         # Exit with appropriate status code

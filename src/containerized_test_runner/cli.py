@@ -8,6 +8,7 @@ from socket import gethostname
 
 from containerized_test_runner import Runner, ExecutionTestResults, SuiteLoader
 from .docker import DockerDriver
+from .docker_lite import DockerLiteDriver
 
 logger = logging.getLogger("test-harness")
 
@@ -81,6 +82,7 @@ def create_parser():
     parser = ArgumentParser()
     parser.add_argument("--debug", dest="debug", action="store_true")
     parser.add_argument("--test-image", help="docker image to test")
+    parser.add_argument("--mode", help="mode (lite or lambda)")
     parser.add_argument("--task-root", default="/int-tests", help="location of task resources")
     parser.add_argument("suites", nargs='+')
     return parser
@@ -90,7 +92,15 @@ def does_suite_have_tests(suite_results):
     return len(suite_results.evaluated) > 0
 
 def execute_tests(args):
-    with Runner(driver=DockerDriver(vars(args)), args=args) as app:
+    print(args)
+    if args.mode == "lite":
+        print("LITE MODE")
+        driver = DockerLiteDriver(vars(args))
+    else:
+        print("OD MODE")
+        driver = DockerDriver(vars(args))
+
+    with Runner(driver=driver, args=args) as app:
 
         suites = []
 
