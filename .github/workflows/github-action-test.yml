@@ -26,7 +26,7 @@ jobs:
     - name: Use the current version of the GitHub action (Python) with wild card
       uses: ./
       with:
-        suiteFileArray: '["./github-action-test/suite*.json"]'
+        suiteFileArray: '["./github-action-test/lambda/suite*.json"]'
         dockerImageName: 'public.ecr.aws/lambda/python:3.13'
         taskFolder: './github-action-test/lambda/tasks/python'
 
