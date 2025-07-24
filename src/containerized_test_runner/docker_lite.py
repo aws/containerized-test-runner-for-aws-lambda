@@ -12,7 +12,7 @@ from .driver import Driver
 
 class DockerLiteDriver(Driver):
     def __init__(self,  args):
-        self.logger = logging.getLogger("DockerDriver")
+        self.logger = logging.getLogger("DockerLiteDriver")
         self.logger.setLevel(logging.INFO)
         self.test_image = args.get("test_image")
         self.task_root = args.get("task_root")
