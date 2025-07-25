@@ -25,19 +25,13 @@ runs:
     - name: Install dependencies
       shell: bash
       run: |
-        export PYENV_ROOT="$HOME/.pyenv"
-        export PATH="$PYENV_ROOT/bin:$PATH"
-        eval "$(pyenv init -)"
-        python3.11 -m pip install --upgrade pip
+        python -m pip install --upgrade pip
         pip install .
     
     - name: Run test
       shell: bash
       run: |
-        export PYENV_ROOT="$HOME/.pyenv"
-        export PATH="$PYENV_ROOT/bin:$PATH"
-        eval "$(pyenv init -)"
-        python3.11 $GITHUB_ACTION_PATH/run.py
+        python $GITHUB_ACTION_PATH/run.py
       env:
         INPUT_SUITE_FILE_ARRAY: ${{ inputs.suiteFileArray }}
         DOCKER_IMAGE_NAME: ${{ inputs.dockerImageName }}
