@@ -91,7 +91,7 @@ class DockerDriver(Driver):
         if self.entrypoint is not None:
             extra_docker_args += ["--entrypoint", self.entrypoint]
 
-        cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "127.0.0.1:0:8080"]
+        cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "0.0.0.0:0:8080"]
 
         if self.task_root != None:
             cmd += ["-v", "{}:/var/task".format(self.task_root)]
