@@ -34,3 +34,11 @@ export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
 pyenv global 3.11
+
+
+
+export INPUT_SUITE_FILE_ARRAY='["./github-action-test/lambda/suite*.json"]'
+export DOCKER_IMAGE_NAME='public.ecr.aws/lambda/python:3.13'
+export TASK_FOLDER='./github-action-test/lambda/tasks/python'
+unset DRIVER
+export GITHUB_WORKSPACE="."
