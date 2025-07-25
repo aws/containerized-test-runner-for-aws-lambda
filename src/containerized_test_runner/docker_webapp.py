@@ -94,12 +94,6 @@ class DockerWebAppDriver(Driver):
             if proc.returncode != 0:
                 error_message = stderr.decode().strip()
                 raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Error while running the test container (e={})".format(error_message))
-            print("-- PRINT STDOUT --")
-            print(stdout)
-            print("-- END PRINT STDOUT --")
-            print("-- PRINT STDERR --")
-            print(stderr)
-            print("-- END PRINT STDERR --")
             container_id = stdout.decode().rstrip()
             time.sleep(1)
             # sending the init
@@ -109,12 +103,6 @@ class DockerWebAppDriver(Driver):
             if proc.returncode != 0:
                 error_message = stderr.decode().strip()
                 raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Error while sending the init (e={})".format(error_message))
-            print("-- PRINT STDOUT --")
-            print(stdout)
-            print("-- END PRINT STDOUT --")
-            print("-- PRINT STDERR --")
-            print(stderr)
-            print("-- END PRINT STDERR --")
             local_address = self._get_local_addr(container_id)
             # hurl command
             hurl_command = ["docker", "run", "--network", "host", "--rm", "-v", "{}/..:/suite".format(self.task_root), self.hurl_image, "--variable", "host={}".format(local_address), "/suite/{}".format(hurl_file)]
@@ -133,7 +121,6 @@ class DockerWebAppDriver(Driver):
             raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Unknown error occurred (e={})".format(e))
         finally:
             response = subprocess.run(["docker", "logs", container_id], capture_output=True, text=True)
-            print(response)
             docker_kill_cmd = ["docker", "kill", container_id]
             subprocess.run(docker_kill_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
             self.logger.debug("Killed container [container_id = {}]".format(container_id))
@@ -155,7 +142,6 @@ class DockerWebAppDriver(Driver):
             else:
                 resp = Response("application/json", resp)
         except Exception as e:
-            print(e)
             resp = Response("application/unknown", resp)
         return resp
 
