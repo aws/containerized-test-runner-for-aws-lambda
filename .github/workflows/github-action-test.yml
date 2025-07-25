@@ -65,12 +65,14 @@ jobs:
       run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
 
     - name: Pull the image
-      run: docker pull ${{ secrets.WEBAPP_DOCKER_IMAGE }}
+      run: |
+        aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+        docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/webapp-testing:latest
     - name: Use the current version of the GitHub action (Webapp)
       uses: ./
       with:
         suiteFileArray: '["./github-action-test/webapp/suite_happy_path.json", "./github-action-test/webapp/suite_error.json"]'
-        dockerImageName: ${{ secrets.WEBAPP_DOCKER_IMAGE }}
+        dockerImageName: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/webapp-testing:latest
         taskFolder: './github-action-test/webapp/tasks'
         driver: DockerWebAppDriver
 
