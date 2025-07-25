@@ -89,6 +89,7 @@ class DockerWebAppDriver(Driver):
         cmd += [self.test_image]
         try:
             self.logger.debug("cmd to run = %s", cmd)
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
             if proc.returncode != 0:
                 error_message = stderr.decode().strip()
