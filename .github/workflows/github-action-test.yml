@@ -50,11 +50,18 @@ jobs:
         dockerImageName: 'public.ecr.aws/lambda/nodejs:22'
         taskFolder: './github-action-test/lambda/tasks/nodejs'
 
+    - name: configure aws credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+        role-session-name: GitHub_Action_Session_containerized-test-runner-for-aws-lambda
+        aws-region: ${{ secrets.AWS_REGION }}
+
     - name: Use the current version of the GitHub action (Webapp)
       uses: ./
       with:
         suiteFileArray: '["./github-action-test/webapp/suite_happy_path.json", "./github-action-test/webapp/suite_error.json"]'
-        dockerImageName: 'public.ecr.aws/lambda/nodejs:22'
+        dockerImageName: ${{ secrets.WEBAPP_DOCKER_IMAGE }}
         taskFolder: './github-action-test/webapp/tasks'
         driver: DockerWebAppDriver
 
