@@ -16,16 +16,18 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: dnf install git \
-                 gcc \
-                 zlib-devel \
-                 bzip2-devel \
-                 readline-devel \
-                 sqlite-devel \
-                 openssl-devel \
-                 xz-devel \
-                 libffi-devel \
-                 python-devel
+    - name: Install dependencies
+      run: |
+          dnf install git \
+            gcc \
+            zlib-devel \
+            bzip2-devel \
+            readline-devel \
+            sqlite-devel \
+            openssl-devel \
+            xz-devel \
+            libffi-devel \
+            python-devel
   
     - name: Install python
       run: |
