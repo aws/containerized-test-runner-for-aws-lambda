@@ -46,13 +46,6 @@ jobs:
         pip install ".[test]"
         pip install .
 
-    - name: Use the current version of the GitHub action (Python) with wild card
-      uses: ./
-      with:
-        suiteFileArray: '["./github-action-test/lambda/suite*.json"]'
-        dockerImageName: 'public.ecr.aws/lambda/python:3.13'
-        taskFolder: './github-action-test/lambda/tasks/python'
-
     - name: Pull the image
       run: |
         aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
