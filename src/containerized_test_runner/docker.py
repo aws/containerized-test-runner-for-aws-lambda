@@ -11,6 +11,7 @@ from .tester import AssertionEvaluator, ExecutionTestSucceeded, ExecutionTestFai
 from .driver import Driver
 
 RUNTIME_HOST_CONNECTION_TIMEOUT = 120
+TIMEOUT_FOR_CONTAINER_TO_BE_READY_IN_SECONDS = 5
 
 class DockerDriver(Driver):
     def __init__(self,  args):
@@ -139,7 +140,7 @@ class DockerDriver(Driver):
             stdout, stderr = proc.communicate()
             container_id = stdout.decode().rstrip()
             local_address = self._get_local_addr(container_id)
-            response = self._wait_for_container(local_address, req_bytes, headers, 5)
+            response = self._wait_for_container(local_address, req_bytes, headers, TIMEOUT_FOR_CONTAINER_TO_BE_READY_IN_SECONDS)
             if response is None:
                 raise ExecutionTestFailed(test, ExecutionTestFailed.COMMAND_FAILED, "Container failed to become ready")
         except subprocess.CalledProcessError as e:
