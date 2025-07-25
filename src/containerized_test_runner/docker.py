@@ -143,9 +143,23 @@ class DockerDriver(Driver):
                             stdout.decode(), 
                             stderr.decode())
             subprocess.run(["docker", "ps"])
+
             local_address = self._get_local_addr(container_id).replace("0.0.0.0","127.0.0.1")
             print("local address = {}".format(local_address))
-            response = self._wait_for_container(local_address, req_bytes, headers, 10)
+            response = self._wait_for_container(local_address, req_bytes, headers, 5)
+            print(response)
+
+            local_address = self._get_local_addr(container_id).replace("0.0.0.0","host.docker.internal")
+            print("local address = {}".format(local_address))
+            response = self._wait_for_container(local_address, req_bytes, headers, 5)
+            print(response)
+
+            local_address = self._get_local_addr(container_id)
+            print("local address = {}".format(local_address))
+            response = self._wait_for_container(local_address, req_bytes, headers, 5)
+            print(response)
+
+
             if response is None:
                 raise ExecutionTestFailed(test, ExecutionTestFailed.COMMAND_FAILED, "Container failed to become ready")
         except subprocess.CalledProcessError as e:
@@ -188,6 +202,7 @@ class DockerDriver(Driver):
     def _wait_for_container(self, local_address, req_bytes, headers, timeout):
         start_time = time.time()
         while time.time() - start_time < timeout:
+            print("RETRYING")
             try:
                 response = requests.post(url="http://{}/2015-03-31/functions/function/invocations".format(local_address), data=req_bytes, headers=headers)
                 response = self._render_response(response.content)

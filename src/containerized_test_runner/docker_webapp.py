@@ -93,7 +93,7 @@ class DockerWebAppDriver(Driver):
             stdout, stderr = proc.communicate()
             if proc.returncode != 0:
                 error_message = stderr.decode().strip()
-                raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Error while running the test container (e={})".format(error_message))
+                raise ExecutionTestFailed(test, ExecutionTestFailed.COMMAND_FAILED, "Error while running the test container (e={})".format(error_message))
             container_id = stdout.decode().rstrip()
             time.sleep(1)
             # sending the init
@@ -102,7 +102,7 @@ class DockerWebAppDriver(Driver):
             stdout, stderr = proc.communicate()
             if proc.returncode != 0:
                 error_message = stderr.decode().strip()
-                raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Error while sending the init (e={})".format(error_message))
+                raise ExecutionTestFailed(test, ExecutionTestFailed.COMMAND_FAILED, "Error while sending the init (e={})".format(error_message))
             local_address = self._get_local_addr(container_id)
             # hurl command
             hurl_command = ["docker", "run", "--network", "host", "--rm", "-v", "{}/..:/suite".format(self.task_root), self.hurl_image, "--variable", "host={}".format(local_address), "/suite/{}".format(hurl_file)]
