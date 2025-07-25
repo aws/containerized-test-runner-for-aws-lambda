@@ -143,7 +143,7 @@ class DockerDriver(Driver):
                             stdout.decode(), 
                             stderr.decode())
             time.sleep(3)
-            subprocess.run(["docker", "logs", container_id])
+            subprocess.run(["docker", "ps")
             local_address = self._get_local_addr(container_id).replace("0.0.0.0","127.0.0.1")
             print("local address = {}".format(local_address))
             response = requests.post(url="http://{}/2015-03-31/functions/function/invocations".format(local_address), data=req_bytes, headers=headers)
