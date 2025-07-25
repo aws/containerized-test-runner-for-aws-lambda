@@ -64,6 +64,8 @@ jobs:
     - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
       run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
 
+    - name: Pull the image
+      run: docker pull ${{ secrets.WEBAPP_DOCKER_IMAGE }}
     - name: Use the current version of the GitHub action (Webapp)
       uses: ./
       with:
