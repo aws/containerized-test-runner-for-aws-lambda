@@ -89,8 +89,11 @@ class DockerWebAppDriver(Driver):
         cmd += [self.test_image]
         try:
             self.logger.debug("cmd to run = %s", cmd)
-            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-            container_id = proc.communicate()[0].decode().rstrip()
+            stdout, stderr = proc.communicate()
+            if proc.returncode != 0:
+                error_message = stderr.decode().strip()
+                raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Unknown error occurred (e={})".format(error_message))
+            container_id = stdout.decode().rstrip()
             time.sleep(1)
             # sending the init
             init_cmd = ["docker", "exec", container_id, "curl", "-X", "POST", "-H", "Content-Type: application/json", "-d", "{}", "http://localhost:8080/test/init"]
