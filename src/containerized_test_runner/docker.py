@@ -134,11 +134,17 @@ class DockerDriver(Driver):
             req_bytes = request.data
 
         try:
-            self.logger.debug("cmd to run = %s", cmd)
+            print("cmd to run = %s", cmd)
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-            container_id = proc.communicate()[0].decode().rstrip()
+            stdout, stderr = proc.communicate()
+            container_id = stdout.decode().rstrip()
+
+            print("Command output - STDOUT: %s, STDERR: %s", 
+                            stdout.decode(), 
+                            stderr.decode())
             time.sleep(1)
             local_address = self._get_local_addr(container_id)
+            print("local address = {}".format(local_address))
             response = requests.post(url="http://{}/2015-03-31/functions/function/invocations".format(local_address), data=req_bytes, headers=headers)
             response = self._render_response(response.content)
         except subprocess.CalledProcessError as e:
