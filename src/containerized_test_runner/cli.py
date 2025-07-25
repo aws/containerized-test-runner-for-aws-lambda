@@ -8,6 +8,7 @@ from socket import gethostname
 
 from containerized_test_runner import Runner, ExecutionTestResults, SuiteLoader
 from .docker import DockerDriver
+from .docker_webapp import DockerWebAppDriver
 
 logger = logging.getLogger("test-harness")
 
@@ -81,16 +82,22 @@ def create_parser():
     parser = ArgumentParser()
     parser.add_argument("--debug", dest="debug", action="store_true")
     parser.add_argument("--test-image", help="docker image to test")
+    parser.add_argument("--driver", help="driver", default="DockerDriver")
+    parser.add_argument("--hurl-image", help="hurl image with tag", default="ghcr.io/orange-opensource/hurl:latest")
     parser.add_argument("--task-root", default="/int-tests", help="location of task resources")
     parser.add_argument("suites", nargs='+')
     return parser
-
 
 def does_suite_have_tests(suite_results):
     return len(suite_results.evaluated) > 0
 
 def execute_tests(args):
-    with Runner(driver=DockerDriver(vars(args)), args=args) as app:
+    if args.driver == "DockerWebAppDriver":
+        driver = DockerWebAppDriver(vars(args))
+    if args.driver == "DockerDriver":
+        driver = DockerDriver(vars(args))
+
+    with Runner(driver=driver, args=args) as app:
 
         suites = []
 

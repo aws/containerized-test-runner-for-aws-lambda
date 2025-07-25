@@ -1,4 +1,4 @@
-name: GitHub Action test 
+name: GitHub Action test lambda
 
 on:
   push:
@@ -6,12 +6,21 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-        
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.11'
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -21,9 +30,9 @@ jobs:
     - name: Use the current version of the GitHub action (Python) with wild card
       uses: ./
       with:
-        suiteFileArray: '["./github-action-test/suite*.json"]'
+        suiteFileArray: '["./github-action-test/lambda/suite*.json"]'
         dockerImageName: 'public.ecr.aws/lambda/python:3.13'
-        taskFolder: './github-action-test/tasks/python'
+        taskFolder: './github-action-test/lambda/tasks/python'
 
     - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
       run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
@@ -31,9 +40,9 @@ jobs:
     - name: Use the current version of the GitHub action (Python)
       uses: ./
       with:
-        suiteFileArray: '["./github-action-test/suite0.json", "./github-action-test/suite1.json"]'
+        suiteFileArray: '["./github-action-test/lambda/suite0.json", "./github-action-test/lambda/suite1.json"]'
         dockerImageName: 'public.ecr.aws/lambda/python:3.13'
-        taskFolder: './github-action-test/tasks/python'
+        taskFolder: './github-action-test/lambda/tasks/python'
 
     - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
       run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
@@ -41,9 +50,6 @@ jobs:
     - name: Use the current version of the GitHub action (NodeJS)
       uses: ./
       with:
-        suiteFileArray: '["./github-action-test/suite0.json"]'
+        suiteFileArray: '["./github-action-test/lambda/suite0.json"]'
         dockerImageName: 'public.ecr.aws/lambda/nodejs:22'
-        taskFolder: './github-action-test/tasks/nodejs'
-
-
-        
+        taskFolder: './github-action-test/lambda/tasks/nodejs'

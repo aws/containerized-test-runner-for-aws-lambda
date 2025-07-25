@@ -1,1 +1,5 @@
 test/__pycache__/
+tmp
+.python-version
+github-action-test/lambda/tasks/python/__pycache__
+__pycache__/

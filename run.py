@@ -3,7 +3,7 @@ import json
 import subprocess
 import sys
 
-def run_test_command(json_path, docker_image_name, task_folder):
+def run_test_command(json_path, docker_image_name, task_folder, driver):
     """Run the test command for a specific JSON file path."""
     cmd = [
         'python',
@@ -16,6 +16,9 @@ def run_test_command(json_path, docker_image_name, task_folder):
         task_folder,
         json_path
     ]
+    if driver:
+        cmd += ['--driver', driver]
+    
     try:
         # Use Popen to get real-time output
         process = subprocess.Popen(
@@ -79,6 +82,7 @@ def run():
         docker_image_name = get_required_env_var('DOCKER_IMAGE_NAME')
         task_folder = get_required_env_var('TASK_FOLDER')
         github_workspace = get_required_env_var('GITHUB_WORKSPACE')
+        driver = os.environ.get('DRIVER')
 
         task_folder_absolute = os.path.join(github_workspace, task_folder)
 
@@ -95,7 +99,7 @@ def run():
         # Process each file
         success = True
         for file in suite_files:
-            if not run_test_command(file, docker_image_name, task_folder_absolute):
+            if not run_test_command(file, docker_image_name, task_folder_absolute, driver):
                 success = False
 
         # Exit with appropriate status code
