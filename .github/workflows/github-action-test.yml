@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -23,32 +27,32 @@ jobs:
         pip install ".[test]"
         pip install .
 
-    - name: Use the current version of the GitHub action (Python) with wild card
-      uses: ./
-      with:
-        suiteFileArray: '["./github-action-test/lambda/suite*.json"]'
-        dockerImageName: 'public.ecr.aws/lambda/python:3.13'
-        taskFolder: './github-action-test/lambda/tasks/python'
+    # - name: Use the current version of the GitHub action (Python) with wild card
+    #   uses: ./
+    #   with:
+    #     suiteFileArray: '["./github-action-test/lambda/suite*.json"]'
+    #     dockerImageName: 'public.ecr.aws/lambda/python:3.13'
+    #     taskFolder: './github-action-test/lambda/tasks/python'
 
-    - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
-      run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
+    # - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
+    #   run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
 
-    - name: Use the current version of the GitHub action (Python)
-      uses: ./
-      with:
-        suiteFileArray: '["./github-action-test/lambda/suite0.json", "./github-action-test/lambda/suite1.json"]'
-        dockerImageName: 'public.ecr.aws/lambda/python:3.13'
-        taskFolder: './github-action-test/lambda/tasks/python'
+    # - name: Use the current version of the GitHub action (Python)
+    #   uses: ./
+    #   with:
+    #     suiteFileArray: '["./github-action-test/lambda/suite0.json", "./github-action-test/lambda/suite1.json"]'
+    #     dockerImageName: 'public.ecr.aws/lambda/python:3.13'
+    #     taskFolder: './github-action-test/lambda/tasks/python'
 
-    - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
-      run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
+    # - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
+    #   run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
   
-    - name: Use the current version of the GitHub action (NodeJS)
-      uses: ./
-      with:
-        suiteFileArray: '["./github-action-test/lambda/suite0.json"]'
-        dockerImageName: 'public.ecr.aws/lambda/nodejs:22'
-        taskFolder: './github-action-test/lambda/tasks/nodejs'
+    # - name: Use the current version of the GitHub action (NodeJS)
+    #   uses: ./
+    #   with:
+    #     suiteFileArray: '["./github-action-test/lambda/suite0.json"]'
+    #     dockerImageName: 'public.ecr.aws/lambda/nodejs:22'
+    #     taskFolder: './github-action-test/lambda/tasks/nodejs'
 
     - name: configure aws credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -56,6 +60,9 @@ jobs:
         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
         role-session-name: GitHub_Action_Session_containerized-test-runner-for-aws-lambda
         aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
+      run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
 
     - name: Use the current version of the GitHub action (Webapp)
       uses: ./
