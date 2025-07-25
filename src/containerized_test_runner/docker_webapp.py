@@ -93,13 +93,28 @@ class DockerWebAppDriver(Driver):
             stdout, stderr = proc.communicate()
             if proc.returncode != 0:
                 error_message = stderr.decode().strip()
-                raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Unknown error occurred (e={})".format(error_message))
+                raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Error while running the test container (e={})".format(error_message))
+            print("-- PRINT STDOUT --")
+            print(stdout)
+            print("-- END PRINT STDOUT --")
+            print("-- PRINT STDERR --")
+            print(stderr)
+            print("-- END PRINT STDERR --")
             container_id = stdout.decode().rstrip()
             time.sleep(1)
             # sending the init
             init_cmd = ["docker", "exec", container_id, "curl", "-X", "POST", "-H", "Content-Type: application/json", "-d", "{}", "http://localhost:8080/test/init"]
             proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-            proc.communicate()
+            stdout, stderr = proc.communicate()
+            if proc.returncode != 0:
+                error_message = stderr.decode().strip()
+                raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Error while sending the init (e={})".format(error_message))
+            print("-- PRINT STDOUT --")
+            print(stdout)
+            print("-- END PRINT STDOUT --")
+            print("-- PRINT STDERR --")
+            print(stderr)
+            print("-- END PRINT STDERR --")
             local_address = self._get_local_addr(container_id)
             # hurl command
             hurl_command = ["docker", "run", "--network", "host", "--rm", "-v", "{}/..:/suite".format(self.task_root), self.hurl_image, "--variable", "host={}".format(local_address), "/suite/{}".format(hurl_file)]
