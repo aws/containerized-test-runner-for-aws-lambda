@@ -12,14 +12,27 @@ permissions:
 
 jobs:
   test:
-    runs-on: codebuild-containerized-test-runner-for-aws-lambda-${{ github.run_id }}-${{ github.run_attempt }}
+    runs-on: ubuntu-latest
+    # runs-on: codebuild-containerized-test-runner-for-aws-lambda-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+    # - name: Set up Python
+    #   uses: actions/setup-python@v5
+    #   with:
+    #     python-version: '3.11'
+    - name: Install python
+      run: |
+        curl https://pyenv.run | bash
+        echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+        echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+        echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+        pyenv install 3.11
+        pyenv global 3.11
+
+
+# Reload shell
+source ~/.bashrc
         
     - name: Install dependencies
       run: |
