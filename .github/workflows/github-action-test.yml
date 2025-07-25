@@ -31,6 +31,7 @@ jobs:
   
     - name: Install python
       run: |
+        rm -rf /root/.pyenv
         curl https://pyenv.run | bash
         export PYENV_ROOT="$HOME/.pyenv"
         export PATH="$PYENV_ROOT/bin:$PATH"
@@ -73,13 +74,6 @@ jobs:
     #     suiteFileArray: '["./github-action-test/lambda/suite0.json"]'
     #     dockerImageName: 'public.ecr.aws/lambda/nodejs:22'
     #     taskFolder: './github-action-test/lambda/tasks/nodejs'
-
-    - name: configure aws credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-        role-session-name: GitHub_Action_Session_containerized-test-runner-for-aws-lambda
-        aws-region: ${{ secrets.AWS_REGION }}
 
     - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
       run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
