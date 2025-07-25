@@ -91,7 +91,7 @@ class DockerDriver(Driver):
         if self.entrypoint is not None:
             extra_docker_args += ["--entrypoint", self.entrypoint]
 
-        cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "0.0.0.0:0:8080"]
+        cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "127.0.0.1:0:8080"]
 
         if self.task_root != None:
             cmd += ["-v", "{}:/var/task".format(self.task_root)]
@@ -138,28 +138,8 @@ class DockerDriver(Driver):
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
             container_id = stdout.decode().rstrip()
-
-            print("Command output - STDOUT: %s, STDERR: %s", 
-                            stdout.decode(), 
-                            stderr.decode())
-            subprocess.run(["docker", "ps"])
-
-            local_address = self._get_local_addr(container_id).replace("0.0.0.0","127.0.0.1")
-            print("local address = {}".format(local_address))
-            response = self._wait_for_container(local_address, req_bytes, headers, 5)
-            print(response)
-
-            local_address = self._get_local_addr(container_id).replace("0.0.0.0","host.docker.internal")
-            print("local address = {}".format(local_address))
-            response = self._wait_for_container(local_address, req_bytes, headers, 5)
-            print(response)
-
             local_address = self._get_local_addr(container_id)
-            print("local address = {}".format(local_address))
             response = self._wait_for_container(local_address, req_bytes, headers, 5)
-            print(response)
-
-
             if response is None:
                 raise ExecutionTestFailed(test, ExecutionTestFailed.COMMAND_FAILED, "Container failed to become ready")
         except subprocess.CalledProcessError as e:
@@ -169,7 +149,6 @@ class DockerDriver(Driver):
         finally:
             if self.logger.isEnabledFor(logging.DEBUG):
                 subprocess.run(["docker", "logs", container_id])
-
             docker_kill_cmd = ["docker", "kill", container_id]
             subprocess.run(docker_kill_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
             self.logger.debug("Killed container [container_id = {}]".format(container_id))
@@ -202,7 +181,6 @@ class DockerDriver(Driver):
     def _wait_for_container(self, local_address, req_bytes, headers, timeout):
         start_time = time.time()
         while time.time() - start_time < timeout:
-            print("RETRYING")
             try:
                 response = requests.post(url="http://{}/2015-03-31/functions/function/invocations".format(local_address), data=req_bytes, headers=headers)
                 response = self._render_response(response.content)

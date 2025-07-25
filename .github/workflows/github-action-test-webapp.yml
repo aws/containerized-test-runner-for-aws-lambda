@@ -53,29 +53,6 @@ jobs:
         dockerImageName: 'public.ecr.aws/lambda/python:3.13'
         taskFolder: './github-action-test/lambda/tasks/python'
 
-    - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
-      run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
-
-    - name: Use the current version of the GitHub action (Python)
-      uses: ./
-      with:
-        suiteFileArray: '["./github-action-test/lambda/suite0.json", "./github-action-test/lambda/suite1.json"]'
-        dockerImageName: 'public.ecr.aws/lambda/python:3.13'
-        taskFolder: './github-action-test/lambda/tasks/python'
-
-    - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
-      run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
-  
-    - name: Use the current version of the GitHub action (NodeJS)
-      uses: ./
-      with:
-        suiteFileArray: '["./github-action-test/lambda/suite0.json"]'
-        dockerImageName: 'public.ecr.aws/lambda/nodejs:22'
-        taskFolder: './github-action-test/lambda/tasks/nodejs'
-
-    - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
-      run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
-
     - name: Pull the image
       run: |
         aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
