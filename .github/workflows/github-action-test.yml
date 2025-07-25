@@ -18,7 +18,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-          dnf install git \
+          dnf install -y git \
             gcc \
             zlib-devel \
             bzip2-devel \
