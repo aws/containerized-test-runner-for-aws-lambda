@@ -4,7 +4,7 @@ HTTP 200
 
 POST http://{{shim}}/test/waitUntilInitialized
 {}
-HTTP 202
+HTTP 200
 
 GET http://{{host}}/echo
 HTTP 200
