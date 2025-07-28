@@ -51,11 +51,6 @@ def run_test_command(json_path, docker_image_name, task_folder, driver):
         # Get any remaining output
         stdout, stderr = process.communicate()
 
-        print("STDOUT= ")
-        print(stdout)
-        print("STDERR= ")
-        print(stderr)
-
         if stdout:
             print(stdout.strip())
             stdout_output.append(stdout)
