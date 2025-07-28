@@ -34,6 +34,10 @@ runs:
       run: |
         pwd
         ls -lah
+        echo $GITHUB_WORKSPACE
+        cd $GITHUB_WORKSPACE
+        pwd
+        ls -lah
         python $GITHUB_ACTION_PATH/run.py
       env:
         INPUT_SUITE_FILE_ARRAY: ${{ inputs.suiteFileArray }}
