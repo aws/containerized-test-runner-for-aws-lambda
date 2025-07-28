@@ -112,7 +112,7 @@ class DockerWebAppDriver(Driver):
             stdout, stderr = proc.communicate()
 
             if stderr != "":
-                raise ExecutionTestFailed(test, ExecutionTestFailed.ASSERTION_FAILED, stderr)
+                raise ExecutionTestFailed(test, ExecutionTestFailed.ASSERTION_FAILED, stderr.strip())
       
         except Exception as e:
             raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Unknown error occurred (e={})".format(e))
