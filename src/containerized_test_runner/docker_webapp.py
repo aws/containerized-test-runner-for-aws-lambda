@@ -69,7 +69,7 @@ class DockerWebAppDriver(Driver):
         if self.entrypoint is not None:
             extra_docker_args += ["--entrypoint", self.entrypoint]
 
-        cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "0.0.0.0:0:3000", "-e", "AWS_LAMBDA_RUNTIME_API=localhost:9000", "-e", "AWS_LAMBDA_ENTRYPOINT={}".format(handler), "-e", "AWS_LAMBDA_BETA_DEBUG=1"]
+        cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "0.0.0.0:0:8080", "-p", "0.0.0.0:0:3000", "-e", "AWS_LAMBDA_RUNTIME_API=localhost:9000", "-e", "AWS_LAMBDA_ENTRYPOINT={}".format(handler), "-e", "AWS_LAMBDA_BETA_DEBUG=1"]
 
         if self.task_root != None:
             cmd += ["-v", "{}:/var/task".format(self.task_root)]
@@ -96,16 +96,12 @@ class DockerWebAppDriver(Driver):
                 raise ExecutionTestFailed(test, ExecutionTestFailed.COMMAND_FAILED, "Error while running the test container (e={})".format(error_message))
             container_id = stdout.decode().rstrip()
             time.sleep(1)
-            # sending the init
-            init_cmd = ["docker", "exec", container_id, "curl", "-X", "POST", "-H", "Content-Type: application/json", "-d", "{}", "http://localhost:8080/test/init"]
-            proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = proc.communicate()
-            if proc.returncode != 0:
-                error_message = stderr.decode().strip()
-                raise ExecutionTestFailed(test, ExecutionTestFailed.COMMAND_FAILED, "Error while sending the init (e={})".format(error_message))
-            local_address = self._get_local_addr(container_id)
+
+            local_address = self._get_local_addr(container_id, "3000")
+            shim_address = self._get_local_addr(container_id, "8080")
+
             # hurl command
-            hurl_command = ["docker", "run", "--network", "host", "--rm", "-v", "{}/..:/suite".format(self.task_root), self.hurl_image, "--variable", "host={}".format(local_address), "/suite/{}".format(hurl_file)]
+            hurl_command = ["docker", "run", "--network", "host", "--rm", "-v", "{}/..:/suite".format(self.task_root), self.hurl_image, "--variable", "host={}".format(local_address), "--variable", "shim={}".format(shim_address), "/suite/{}".format(hurl_file)]
 
             proc = subprocess.Popen(
                 hurl_command,
@@ -114,9 +110,10 @@ class DockerWebAppDriver(Driver):
                 universal_newlines=True
             )
             stdout, stderr = proc.communicate()
-            if "error: Assert" in stderr:
-                raise ExecutionTestFailed(test, ExecutionTestFailed.ASSERTION_FAILED, stderr)
 
+            if stderr != "":
+                raise ExecutionTestFailed(test, ExecutionTestFailed.ASSERTION_FAILED, stderr)
+      
         except Exception as e:
             raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Unknown error occurred (e={})".format(e))
         finally:
@@ -145,8 +142,8 @@ class DockerWebAppDriver(Driver):
             resp = Response("application/unknown", resp)
         return resp
 
-    def _get_local_addr(self, container_id):
-        docker_port_cmd = ["docker", "port", container_id, "3000"]
+    def _get_local_addr(self, container_id, port):
+        docker_port_cmd = ["docker", "port", container_id, port]
         docker_port_proc = subprocess.Popen(docker_port_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
         return docker_port_proc.communicate()[0].decode().rstrip()
 

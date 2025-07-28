@@ -5,12 +5,7 @@
             "handler": "error.js",
             "driver": "lite",
             "hurl_file":"./error.hurl",
-            "assertions": [
-                {
-                    "transform": "last | select(.error == \"Application.TimeoutListenError\") | .error",
-                    "response": "Application.TimeoutListenError"
-                }
-            ]
+            "assertions": []
         }
     ]
 }

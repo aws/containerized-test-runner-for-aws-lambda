@@ -1,5 +1,11 @@
-GET http://{{host}}/echo
+POST http://{{shim}}/test/init
+{}
 HTTP 200
+
+POST http://{{shim}}/test/waitUntilInitialized
+{}
+HTTP 400
 [Asserts]
-header "Content-Type" contains "application/json"
-jsonpath "$.message" == "echo"
+jsonpath "$.error.errorCategory" == "Error.Application"
+jsonpath "$.error.reason" == "Application.TimeoutListenError"
+jsonpath "$.error.errorMsg" == "Application.TimeoutListenError"
