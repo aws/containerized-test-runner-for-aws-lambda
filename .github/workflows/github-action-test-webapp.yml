@@ -23,7 +23,7 @@ jobs:
     - name: Use the current version of the GitHub action (Webapp)
       uses: ./
       with:
-        suiteFileArray: '["./github-action-test/webapp/suite_happy_path.json", "./github-action-test/webapp/suite_error.json"]'
+        suiteFileArray: '["./github-action-test/webapp/suites/*.suite"]'
         dockerImageName: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/webapp-testing:latest
         taskFolder: './github-action-test/webapp/tasks'
         driver: DockerWebAppDriver

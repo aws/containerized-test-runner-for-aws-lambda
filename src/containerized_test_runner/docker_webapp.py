@@ -113,7 +113,7 @@ class DockerWebAppDriver(Driver):
                 raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Could not download hurl image")
             
             # hurl command
-            hurl_command = ["docker", "run", "--network", "host", "--rm", "-v", "{}/..:/suites".format(self.task_root), self.hurl_image, "--variable", "host={}".format(local_address), "--variable", "shim={}".format(shim_address), "/suites/{}".format(hurl_file)]
+            hurl_command = ["docker", "run", "--network", "host", "--rm", "-v", "{}/../suites:/suites".format(self.task_root), self.hurl_image, "--variable", "host={}".format(local_address), "--variable", "shim={}".format(shim_address), "/suites/{}".format(hurl_file)]
 
             proc = subprocess.Popen(
                 hurl_command,
