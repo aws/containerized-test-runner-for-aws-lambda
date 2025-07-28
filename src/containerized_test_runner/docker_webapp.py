@@ -113,7 +113,7 @@ class DockerWebAppDriver(Driver):
                 raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Could not download hurl image")
             
             # hurl command
-            hurl_command = ["docker", "run", "--network", "host", "--rm", "-v", "{}/..:/suite".format(self.task_root), self.hurl_image, "--variable", "host={}".format(local_address), "--variable", "shim={}".format(shim_address), "/suite/{}".format(hurl_file)]
+            hurl_command = ["docker", "run", "--network", "host", "--rm", "-v", "{}/..:/suites".format(self.task_root), self.hurl_image, "--variable", "host={}".format(local_address), "--variable", "shim={}".format(shim_address), "/suites/{}".format(hurl_file)]
 
             proc = subprocess.Popen(
                 hurl_command,
@@ -130,7 +130,6 @@ class DockerWebAppDriver(Driver):
             raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Unknown error occurred (e={})".format(e))
         finally:
             response = subprocess.run(["docker", "logs", container_id], capture_output=True, text=True)
-            print(response)
             docker_kill_cmd = ["docker", "kill", container_id]
             subprocess.run(docker_kill_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
             self.logger.debug("Killed container [container_id = {}]".format(container_id))
