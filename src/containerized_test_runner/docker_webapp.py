@@ -123,12 +123,6 @@ class DockerWebAppDriver(Driver):
             )
             stdout, stderr = proc.communicate()
 
-            print("hurl result")
-            print(stdout)
-            print("end of stdout")
-            print(stderr)
-            print("end of stderr")
-
             if stderr != "":
                 raise ExecutionTestFailed(test, ExecutionTestFailed.ASSERTION_FAILED, stderr.strip())
       
