@@ -23,6 +23,7 @@ runs:
       shell: bash
       run: |
         pwd
+        echo $GITHUB_ACTION_PATH
         ls -lah
         python -m pip install --upgrade pip
         pip install .
