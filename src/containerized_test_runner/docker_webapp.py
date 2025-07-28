@@ -130,6 +130,7 @@ class DockerWebAppDriver(Driver):
             raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Unknown error occurred (e={})".format(e))
         finally:
             response = subprocess.run(["docker", "logs", container_id], capture_output=True, text=True)
+            print(response)
             docker_kill_cmd = ["docker", "kill", container_id]
             subprocess.run(docker_kill_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
             self.logger.debug("Killed container [container_id = {}]".format(container_id))
