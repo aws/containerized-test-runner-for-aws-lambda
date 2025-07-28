@@ -25,6 +25,7 @@ runs:
         pwd
         echo $GITHUB_ACTION_PATH
         ls -lah
+        cd $GITHUB_ACTION_PATH
         python -m pip install --upgrade pip
         pip install .
     
