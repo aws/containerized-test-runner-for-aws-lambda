@@ -22,9 +22,6 @@ runs:
     - name: Install dependencies
       shell: bash
       run: |
-        pwd
-        echo $GITHUB_ACTION_PATH
-        ls -lah
         cd $GITHUB_ACTION_PATH
         python -m pip install --upgrade pip
         pip install .
@@ -32,12 +29,7 @@ runs:
     - name: Run test
       shell: bash
       run: |
-        pwd
-        ls -lah
-        echo $GITHUB_WORKSPACE
         cd $GITHUB_WORKSPACE
-        pwd
-        ls -lah
         python $GITHUB_ACTION_PATH/run.py
       env:
         INPUT_SUITE_FILE_ARRAY: ${{ inputs.suiteFileArray }}
