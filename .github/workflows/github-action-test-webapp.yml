@@ -20,6 +20,7 @@ jobs:
       run: |
         aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
         docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/webapp-testing:latest
+
     - name: Use the current version of the GitHub action (Webapp)
       uses: ./
       with:
@@ -27,6 +28,3 @@ jobs:
         dockerImageName: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/webapp-testing:latest
         taskFolder: './github-action-test/webapp/tasks'
         driver: DockerWebAppDriver
-
-
-        
