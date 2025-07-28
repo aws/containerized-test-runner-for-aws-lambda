@@ -19,18 +19,17 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
     - name: Install dependencies
       shell: bash
       run: |
+        cd $GITHUB_ACTION_PATH
         python -m pip install --upgrade pip
         pip install .
     
     - name: Run test
       shell: bash
       run: |
+        cd $GITHUB_WORKSPACE
         python $GITHUB_ACTION_PATH/run.py
       env:
         INPUT_SUITE_FILE_ARRAY: ${{ inputs.suiteFileArray }}
