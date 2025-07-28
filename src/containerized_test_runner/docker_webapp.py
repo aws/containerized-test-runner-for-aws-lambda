@@ -69,7 +69,7 @@ class DockerWebAppDriver(Driver):
         if self.entrypoint is not None:
             extra_docker_args += ["--entrypoint", self.entrypoint]
 
-        cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "0.0.0.0:0:8080", "-p", "0.0.0.0:0:3000", "-e", "AWS_LAMBDA_HTTP_ENDPOINT=0.0.0.0:3000", "-e", "AWS_LAMBDA_RUNTIME_API=localhost:9000", "-e", "AWS_LAMBDA_ENTRYPOINT={}".format(handler), "-e", "AWS_LAMBDA_BETA_DEBUG=1"]
+        cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "0.0.0.0:0:8080", "-p", "0.0.0.0:0:3000", "-e", "AWS_LAMBDA_RUNTIME_API=localhost:9000", "-e", "AWS_LAMBDA_ENTRYPOINT={}".format(handler), "-e", "AWS_LAMBDA_BETA_DEBUG=1"]
 
         if self.task_root != None:
             cmd += ["-v", "{}:/var/task".format(self.task_root)]
