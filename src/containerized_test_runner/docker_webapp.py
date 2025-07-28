@@ -99,7 +99,19 @@ class DockerWebAppDriver(Driver):
 
             local_address = self._get_local_addr(container_id, "3000")
             shim_address = self._get_local_addr(container_id, "8080")
-
+            
+            # pull hurl image
+            hurl_command = ["docker", "pull", self.hurl_image];
+            proc = subprocess.Popen(
+                hurl_command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True
+            )
+            stdout, stderr = proc.communicate()
+            if stderr != "":
+                raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Could not download hurl image")
+            
             # hurl command
             hurl_command = ["docker", "run", "--network", "host", "--rm", "-v", "{}/..:/suite".format(self.task_root), self.hurl_image, "--variable", "host={}".format(local_address), "--variable", "shim={}".format(shim_address), "/suite/{}".format(hurl_file)]
 
