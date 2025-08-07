@@ -7,7 +7,6 @@ from .tester import ExecutionTestFailed, ExecutionTestSkipped, InvalidResource
 
 class ExecutionTestResults:
     def __init__(self, suite={}):
-        print("executionTestResult")
         self.suite = suite
         self.evaluated = []
         self.succeeded = []
