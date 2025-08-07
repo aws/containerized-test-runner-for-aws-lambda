@@ -3,20 +3,16 @@ import logging
 from .driver import Driver
 from .suiteloader import SuiteLoader
 from .tester import ExecutionTestFailed, ExecutionTestSkipped, InvalidResource
-from dataclasses import dataclass, field
-from typing import Dict, List
-
-suite = Dict[str, Dict]
 
 
-@dataclass
 class ExecutionTestResults:
-    suite: Dict = field(default_factory=list)
-    evaluated: List = field(default_factory=list)
-    succeeded: List = field(default_factory=list)
-    skipped: List = field(default_factory=list)
-    failed: List = field(default_factory=list)
-    failed_names: List = field(default_factory=list)
+    def __init__(self, suite={}):
+        self.suite = suite
+        self.evaluated = []
+        self.succeeded = []
+        self.skipped = []
+        self.failed = []
+        self.failed_names = []
 
 
 class Runner:
@@ -37,6 +33,7 @@ class Runner:
         return SuiteLoader.load_suite_from_file(path)
 
     def run(self, suites, override):
+
         self.logger.info("run with driver %s", self.driver)
 
         suites = [SuiteLoader.load_suite_from_file(f) for f in suites]
@@ -52,6 +49,7 @@ class Runner:
         return test_results
 
     def run_suite(self, suite, override, test_results):
+
         test_default, test_resources = self._get_test_macros(suite, override)
         test_template = suite.get("template", None)
         test_assertions = suite.get("assertions", [])
