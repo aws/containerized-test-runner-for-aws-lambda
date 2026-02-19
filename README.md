@@ -1,4 +1,4 @@
-## Containerized Test Runner For Aws Lambda
+## Containerized Test Runner For AWS Lambda
 
 This action runs containerized tests. This is useful for testing how the Runtime Interface Client responds to different events. This action is used by public runtimes.
 
