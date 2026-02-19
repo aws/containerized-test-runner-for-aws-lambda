@@ -3,7 +3,6 @@
         {
             "name": "test_error",
             "handler": "error.js",
-            "driver": "lite",
             "hurl_file":"./error.hurl",
             "assertions": [
                 {
