@@ -16,7 +16,7 @@ TIMEOUT_FOR_CONTAINER_TO_BE_READY_IN_SECONDS = 5
 class DockerDriver(Driver):
     def __init__(self,  args):
         self.logger = logging.getLogger("DockerDriver")
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging.DEBUG if args.get("debug") else logging.INFO)
         self.test_image = args.get("test_image")
         self.task_root = args.get("task_root")
         self.entrypoint = args.get("entrypoint")
@@ -139,6 +139,10 @@ class DockerDriver(Driver):
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
             container_id = stdout.decode().rstrip()
+
+            if not container_id:
+                raise ExecutionTestFailed(test, ExecutionTestFailed.COMMAND_FAILED, f"Failed to start container. stderr: {stderr.decode()}")
+
             local_address = self._get_local_addr(container_id)
             response = self._wait_for_container(local_address, req_bytes, headers, TIMEOUT_FOR_CONTAINER_TO_BE_READY_IN_SECONDS)
             if response is None:
@@ -175,9 +179,29 @@ class DockerDriver(Driver):
         return resp
 
     def _get_local_addr(self, container_id):
+        # When running in Docker-in-Docker, use the container's IP address directly
+        # First try to get the container's IP address
+        docker_inspect_cmd = ["docker", "inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", container_id]
+        docker_inspect_proc = subprocess.Popen(docker_inspect_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        ip_address = docker_inspect_proc.communicate()[0].decode().rstrip()
+
+        if ip_address and ip_address != "":
+            return "{}:8080".format(ip_address)
+
+        # Fallback: try docker port (works when running on host)
         docker_port_cmd = ["docker", "port", container_id, "8080"]
         docker_port_proc = subprocess.Popen(docker_port_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        return docker_port_proc.communicate()[0].decode().rstrip()
+        port_output = docker_port_proc.communicate()[0].decode().rstrip()
+
+        self.logger.debug(f"docker port output: '{port_output}'")
+
+        # If docker port returns a valid address, use it
+        if port_output and port_output != "":
+            return port_output
+
+        # Last resort: try localhost with port 8080
+        self.logger.warning("Could not determine container address, using localhost:8080")
+        return "127.0.0.1:8080"
 
     def _wait_for_container(self, local_address, req_bytes, headers, timeout):
         start_time = time.time()
