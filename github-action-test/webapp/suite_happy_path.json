@@ -3,7 +3,6 @@
         {
             "name": "test_happy_path",
             "handler": "happy_path.js",
-            "driver": "lite",
             "hurl_file":"./happy_path.hurl",
             "assertions": []
         }
