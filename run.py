@@ -81,25 +81,34 @@ def run():
         suite_files_input = get_required_env_var('INPUT_SUITE_FILE_ARRAY')
         docker_image_name = get_required_env_var('DOCKER_IMAGE_NAME')
         task_folder = get_required_env_var('TASK_FOLDER')
-        # Use HOST_WORKSPACE if available (Docker action), otherwise fall back to GITHUB_WORKSPACE
-        workspace = os.environ.get('HOST_WORKSPACE') or get_required_env_var('GITHUB_WORKSPACE')
+        container_workspace = get_required_env_var('GITHUB_WORKSPACE')
+        host_workspace = get_required_env_var('HOST_WORKSPACE')
+
         driver = os.environ.get('DRIVER')
 
-        task_folder_absolute = os.path.join(workspace, task_folder)
+        print(f"DEBUG: GITHUB_WORKSPACE (container) = {container_workspace}")
+        print(f"DEBUG: HOST_WORKSPACE (for mounts) = {host_workspace}")
+        print(f"DEBUG: task_folder = {task_folder}")
 
-        # Ensure the resulting path exists
-        if not os.path.exists(task_folder_absolute):
-            raise ValueError(f"The resulting task folder path does not exist: {task_folder_absolute}")
-        
-        # Get the array from the input and parse it
+        task_folder_absolute = os.path.join(host_workspace, task_folder)
+        print(f"DEBUG: task_folder_absolute (for volume mounts) = {task_folder_absolute}")
         suite_files = json.loads(suite_files_input)
 
         if not isinstance(suite_files, list):
             raise ValueError("Input must be a JSON array")
 
+        resolved_suite_files = []
+        for file in suite_files:
+            if not os.path.isabs(file):
+                resolved_file = os.path.join(container_workspace, file)
+            else:
+                resolved_file = file
+            resolved_suite_files.append(resolved_file)
+            print(f"DEBUG: Suite file: {file} -> {resolved_file}")
+
         # Process each file
         success = True
-        for file in suite_files:
+        for file in resolved_suite_files:
             if not run_test_command(file, docker_image_name, task_folder_absolute, driver):
                 success = False
 
