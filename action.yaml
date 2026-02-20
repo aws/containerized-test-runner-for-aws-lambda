@@ -15,9 +15,6 @@ inputs:
   driver:
     description: 'Driver to use'
     required: false
-  hostWorkspace:
-    description: 'Host workspace path for volume mounts'
-    required: true
 
 runs:
   using: 'docker'
@@ -27,4 +24,3 @@ runs:
     DOCKER_IMAGE_NAME: ${{ inputs.dockerImageName }}
     TASK_FOLDER: ${{ inputs.taskFolder }}
     DRIVER: ${{ inputs.driver }}
-    HOST_WORKSPACE: ${{ inputs.hostWorkspace }}

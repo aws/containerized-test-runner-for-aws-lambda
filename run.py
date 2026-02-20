@@ -81,17 +81,26 @@ def run():
         suite_files_input = get_required_env_var('INPUT_SUITE_FILE_ARRAY')
         docker_image_name = get_required_env_var('DOCKER_IMAGE_NAME')
         task_folder = get_required_env_var('TASK_FOLDER')
-        container_workspace = get_required_env_var('GITHUB_WORKSPACE')
-        host_workspace = get_required_env_var('HOST_WORKSPACE')
+        workspace = get_required_env_var('GITHUB_WORKSPACE')
 
         driver = os.environ.get('DRIVER')
 
-        print(f"DEBUG: GITHUB_WORKSPACE (container) = {container_workspace}")
-        print(f"DEBUG: HOST_WORKSPACE (for mounts) = {host_workspace}")
+        print(f"DEBUG: GITHUB_WORKSPACE = {workspace}")
         print(f"DEBUG: task_folder = {task_folder}")
 
-        task_folder_absolute = os.path.join(host_workspace, task_folder)
-        print(f"DEBUG: task_folder_absolute (for volume mounts) = {task_folder_absolute}")
+        task_folder_absolute = os.path.join(workspace, task_folder)
+        print(f"DEBUG: task_folder_absolute = {task_folder_absolute}")
+        
+        # List the task folder to verify files exist
+        print(f"DEBUG: Listing {task_folder_absolute}:")
+        try:
+            result = subprocess.run(['ls', '-la', task_folder_absolute], capture_output=True, text=True)
+            print(result.stdout)
+            if result.stderr:
+                print(f"DEBUG: ls stderr: {result.stderr}")
+        except Exception as e:
+            print(f"DEBUG: Could not list directory: {e}")
+        
         suite_files = json.loads(suite_files_input)
 
         if not isinstance(suite_files, list):
@@ -100,7 +109,7 @@ def run():
         resolved_suite_files = []
         for file in suite_files:
             if not os.path.isabs(file):
-                resolved_file = os.path.join(container_workspace, file)
+                resolved_file = os.path.join(workspace, file)
             else:
                 resolved_file = file
             resolved_suite_files.append(resolved_file)
