@@ -17,23 +17,5 @@ inputs:
     required: false
 
 runs:
-  using: 'composite'
-  steps:
-    - name: Build test runner image
-      shell: bash
-      run: |
-        cd $GITHUB_ACTION_PATH
-        docker build -t containerized-test-runner:latest .
-
-    - name: Run test
-      shell: bash
-      run: |
-        docker run --rm \
-          -v /var/run/docker.sock:/var/run/docker.sock \
-          -v $GITHUB_WORKSPACE:/github/workspace \
-          -w /github/workspace \
-          -e INPUT_SUITE_FILE_ARRAY="${{ inputs.suiteFileArray }}" \
-          -e DOCKER_IMAGE_NAME="${{ inputs.dockerImageName }}" \
-          -e TASK_FOLDER="${{ inputs.taskFolder }}" \
-          -e DRIVER="${{ inputs.driver }}" \
-          containerized-test-runner:latest
+  using: 'docker'
+  image: 'Dockerfile'
