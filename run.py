@@ -81,10 +81,11 @@ def run():
         suite_files_input = get_required_env_var('INPUT_SUITE_FILE_ARRAY')
         docker_image_name = get_required_env_var('DOCKER_IMAGE_NAME')
         task_folder = get_required_env_var('TASK_FOLDER')
-        github_workspace = get_required_env_var('GITHUB_WORKSPACE')
+        # Use HOST_WORKSPACE if available (Docker action), otherwise fall back to GITHUB_WORKSPACE
+        workspace = os.environ.get('HOST_WORKSPACE') or get_required_env_var('GITHUB_WORKSPACE')
         driver = os.environ.get('DRIVER')
 
-        task_folder_absolute = os.path.join(github_workspace, task_folder)
+        task_folder_absolute = os.path.join(workspace, task_folder)
 
         # Ensure the resulting path exists
         if not os.path.exists(task_folder_absolute):

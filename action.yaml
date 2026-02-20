@@ -24,4 +24,4 @@ runs:
     DOCKER_IMAGE_NAME: ${{ inputs.dockerImageName }}
     TASK_FOLDER: ${{ inputs.taskFolder }}
     DRIVER: ${{ inputs.driver }}
-    GITHUB_WORKSPACE: ${{ github.workspace }}
+    HOST_WORKSPACE: ${{ github.workspace }}
