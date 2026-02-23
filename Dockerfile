@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # Install build dependencies for pyjq and Docker CLI
 RUN apt-get update && \
@@ -11,9 +11,9 @@ RUN apt-get update && \
     libtool \
     ca-certificates \
     curl \
-    && curl -fsSL https://get.docker.com -o get-docker.sh \
-    && sh get-docker.sh \
-    && rm get-docker.sh \
+    # && curl -fsSL https://get.docker.com -o get-docker.sh \
+    # && sh get-docker.sh \
+    # && rm get-docker.sh \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
