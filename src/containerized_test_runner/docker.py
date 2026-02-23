@@ -134,8 +134,11 @@ class DockerDriver(Driver):
         else:
             req_bytes = request.data
 
+        # Initialize to None so the finally block can safely check if a container
+        # was actually started before attempting to fetch logs or kill it.
+        container_id = None
         try:
-            print("cmd to run = %s", cmd)
+            self.logger.debug("cmd to run = %s", cmd)
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = proc.communicate()
             container_id = stdout.decode().rstrip()
@@ -152,11 +155,13 @@ class DockerDriver(Driver):
         except Exception as e:
             raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Unknown error occurred (e={})".format(e))
         finally:
-            if self.logger.isEnabledFor(logging.DEBUG):
-                subprocess.run(["docker", "logs", container_id])
-            docker_kill_cmd = ["docker", "kill", container_id]
-            subprocess.run(docker_kill_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-            self.logger.debug("Killed container [container_id = {}]".format(container_id))
+            if container_id:
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    logs_result = subprocess.run(["docker", "logs", container_id], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    self.logger.debug("docker logs:\n%s", logs_result.stdout.decode())
+                docker_kill_cmd = ["docker", "kill", container_id]
+                subprocess.run(docker_kill_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+                self.logger.debug("Killed container [container_id = {}]".format(container_id))
 
         return response
 
