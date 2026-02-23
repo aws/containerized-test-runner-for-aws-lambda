@@ -12,10 +12,9 @@ def run_test_command(json_path, docker_image_name, task_folder, driver):
         '--test-image',
         docker_image_name,
         '--debug',
-        '--task-root',
-        task_folder,
         json_path
     ]
+    
     if driver:
         cmd += ['--driver', driver]
     

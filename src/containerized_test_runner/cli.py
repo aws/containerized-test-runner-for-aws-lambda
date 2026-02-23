@@ -84,7 +84,6 @@ def create_parser():
     parser.add_argument("--test-image", help="docker image to test")
     parser.add_argument("--driver", help="driver", default="DockerDriver")
     parser.add_argument("--hurl-image", help="hurl image with tag", default="ghcr.io/orange-opensource/hurl:latest")
-    parser.add_argument("--task-root", default=None, help="location of task resources")
     parser.add_argument("suites", nargs='+')
     return parser
 
