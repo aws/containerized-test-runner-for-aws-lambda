@@ -2,9 +2,6 @@ import os
 import json
 import subprocess
 import sys
-import logging
-
-logger = logging.getLogger("run")
 
 def run_test_command(json_path, docker_image_name, driver):
     """Run the test command for a specific JSON file path."""
@@ -41,10 +38,10 @@ def run_test_command(json_path, docker_image_name, driver):
             stderr_line = process.stderr.readline()
             
             if stdout_line:
-                logger.debug(stdout_line.strip())
+                print(stdout_line.strip())
                 stdout_output.append(stdout_line)
             if stderr_line:
-                logger.debug(stderr_line.strip())
+                print(stderr_line.strip(), file=sys.stderr)
                 stderr_output.append(stderr_line)
             
             if process.poll() is not None:
@@ -53,21 +50,21 @@ def run_test_command(json_path, docker_image_name, driver):
         # Get any remaining output
         stdout, stderr = process.communicate()
         if stdout:
-            logger.debug(stdout.strip())
+            print(stdout.strip())
             stdout_output.append(stdout)
         if stderr:
-            logger.debug(stderr.strip())
+            print(stderr.strip(), file=sys.stderr)
             stderr_output.append(stderr)
 
         if process.returncode == 0:
-            logger.debug("Successfully processed %s", json_path)
+            print(f"Successfully processed {json_path}")
             return True
         else:
-            logger.error("Error processing %s: Return code %s", json_path, process.returncode)
+            print(f"Error processing {json_path}: Return code {process.returncode}")
             return False
 
     except Exception as e:
-        logger.error("Error processing %s: %s", json_path, str(e))
+        print(f"Error processing {json_path}: {str(e)}")
         return False
 
 def get_required_env_var(var_name):
@@ -85,7 +82,7 @@ def run():
         github_workspace = get_required_env_var('GITHUB_WORKSPACE')
         driver = os.environ.get('DRIVER')
         test_image_with_tasks = f"{docker_image_name}-with-tasks"
-        logger.info("Building test image with tasks: %s", test_image_with_tasks)
+        print(f"Building test image with tasks: {test_image_with_tasks}")
 
         dockerfile_content = f"""FROM {docker_image_name}
 COPY {task_folder} /var/task
@@ -96,15 +93,15 @@ COPY {task_folder} /var/task
 
 
         build_cmd = ['docker', 'build', '-f', dockerfile_path, '-t', test_image_with_tasks, github_workspace]
-        logger.debug("Running: %s", ' '.join(build_cmd))
+        print(f"DEBUG: Running: {' '.join(build_cmd)}")
         build_result = subprocess.run(build_cmd, capture_output=True, text=True)
-        logger.debug(build_result.stdout)
+        print(build_result.stdout)
         if build_result.stderr:
-            logger.debug(build_result.stderr)
+            print(build_result.stderr)
         if build_result.returncode != 0:
             raise Exception(f"Failed to build test image: {build_result.stderr}")
 
-        logger.info("Successfully built %s", test_image_with_tasks)
+        print(f"Successfully built {test_image_with_tasks}")
 
         suite_files = json.loads(suite_files_input)
 
@@ -121,10 +118,10 @@ COPY {task_folder} /var/task
         sys.exit(0 if success else 1)
 
     except json.JSONDecodeError:
-        logger.error("Error: Invalid JSON input")
+        print("Error: Invalid JSON input")
         sys.exit(1)
     except Exception as e:
-        logger.error("Error: %s", str(e))
+        print(f"Error: {str(e)}")
         sys.exit(1)
 
 if __name__ == "__main__":
