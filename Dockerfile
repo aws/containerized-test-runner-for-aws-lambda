@@ -11,9 +11,6 @@ RUN apt-get update && \
     libtool \
     ca-certificates \
     curl \
-    && curl -fsSL https://get.docker.com -o get-docker.sh \
-    && sh get-docker.sh \
-    && rm get-docker.sh \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
