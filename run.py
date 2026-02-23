@@ -3,7 +3,7 @@ import json
 import subprocess
 import sys
 
-def run_test_command(json_path, docker_image_name, task_folder, driver):
+def run_test_command(json_path, docker_image_name, driver):
     """Run the test command for a specific JSON file path."""
     cmd = [
         'python',
@@ -76,45 +76,23 @@ def get_required_env_var(var_name):
     
 def run():
     try:
-
         suite_files_input = get_required_env_var('INPUT_SUITE_FILE_ARRAY')
         docker_image_name = get_required_env_var('DOCKER_IMAGE_NAME')
         task_folder = get_required_env_var('TASK_FOLDER')
-        workspace = get_required_env_var('GITHUB_WORKSPACE')
-
+        github_workspace = get_required_env_var('GITHUB_WORKSPACE')
         driver = os.environ.get('DRIVER')
-
-        print(f"DEBUG: GITHUB_WORKSPACE = {workspace}")
-        print(f"DEBUG: task_folder = {task_folder}")
-        print(f"DEBUG: docker_image_name = {docker_image_name}")
-
-        task_folder_absolute = os.path.join(workspace, task_folder)
-        print(f"DEBUG: task_folder_absolute = {task_folder_absolute}")
-
-        # List the task folder to verify files exist
-        print(f"DEBUG: Listing {task_folder_absolute}:")
-        try:
-            result = subprocess.run(['ls', '-la', task_folder_absolute], capture_output=True, text=True)
-            print(result.stdout)
-            if result.stderr:
-                print(f"DEBUG: ls stderr: {result.stderr}")
-        except Exception as e:
-            print(f"DEBUG: Could not list directory: {e}")
-
         test_image_with_tasks = f"{docker_image_name}-with-tasks"
         print(f"Building test image with tasks: {test_image_with_tasks}")
 
         dockerfile_content = f"""FROM {docker_image_name}
 COPY {task_folder} /var/task
 """
-        dockerfile_path = os.path.join(workspace, 'Dockerfile.test-with-tasks')
+        dockerfile_path = os.path.join(github_workspace, 'Dockerfile.test-with-tasks')
         with open(dockerfile_path, 'w') as f:
             f.write(dockerfile_content)
 
-        print(f"DEBUG: Created Dockerfile at {dockerfile_path}")
-        print(f"DEBUG: Dockerfile content:\n{dockerfile_content}")
-        
-        build_cmd = ['docker', 'build', '-f', dockerfile_path, '-t', test_image_with_tasks, workspace]
+
+        build_cmd = ['docker', 'build', '-f', dockerfile_path, '-t', test_image_with_tasks, github_workspace]
         print(f"DEBUG: Running: {' '.join(build_cmd)}")
         build_result = subprocess.run(build_cmd, capture_output=True, text=True)
         print(build_result.stdout)
@@ -130,18 +108,10 @@ COPY {task_folder} /var/task
         if not isinstance(suite_files, list):
             raise ValueError("Input must be a JSON array")
 
-        resolved_suite_files = []
-        for file in suite_files:
-            if not os.path.isabs(file):
-                resolved_file = os.path.join(workspace, file)
-            else:
-                resolved_file = file
-            resolved_suite_files.append(resolved_file)
-            print(f"DEBUG: Suite file: {file} -> {resolved_file}")
-
+        suite_files = json.loads(suite_files_input)
         success = True
-        for file in resolved_suite_files:
-            if not run_test_command(file, test_image_with_tasks, None, driver):
+        for file in suite_files:
+            if not run_test_command(file, test_image_with_tasks, driver):
                 success = False
 
         # Exit with appropriate status code
