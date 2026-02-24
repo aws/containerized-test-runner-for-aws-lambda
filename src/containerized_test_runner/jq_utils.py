@@ -1,10 +1,9 @@
-import json
-import subprocess
+import jq
 
 
 def apply_jq_transform(jq_filter, data, return_all=False):
     """
-    Apply jq transformation to data using subprocess
+    Apply jq transformation to data using the jq Python library
     
     :param jq_filter: jq filter expression
     :param data: input data (dict or other JSON-serializable type)
@@ -12,34 +11,17 @@ def apply_jq_transform(jq_filter, data, return_all=False):
     :return: transformed data (single value or list depending on return_all)
     """
     try:
-        # Convert data to JSON string
-        input_json = json.dumps(data)
+        # Compile the jq filter
+        compiled_filter = jq.compile(jq_filter)
         
-        # Run jq command with -c flag to get compact output, one result per line
-        result = subprocess.run(
-            ['jq', '-c', jq_filter],
-            input=input_json,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        
-        # Parse the output - jq returns one result per line
-        output_lines = result.stdout.strip().split('\n')
-        if not output_lines or (len(output_lines) == 1 and not output_lines[0]):
-            return [None] if return_all else None
-        
-        # Parse each line as JSON
-        results = []
-        for line in output_lines:
-            if line:
-                results.append(json.loads(line))
-        
-        if not results:
-            return [None] if return_all else None
-        
-        return results if return_all else results[0]
-    except subprocess.CalledProcessError as e:
-        raise Exception(f"jq command failed: {e.stderr}")
-    except json.JSONDecodeError as e:
-        raise Exception(f"Failed to parse jq output: {e}")
+        if return_all:
+            # Return all results as a list
+            results = list(compiled_filter.input(data).all())
+            # Filter out None values
+            results = [r for r in results if r is not None]
+            return results if results else [None]
+        else:
+            # Return the first result
+            return compiled_filter.input(data).first()
+    except Exception as e:
+        raise Exception(f"jq transformation failed: {e}")

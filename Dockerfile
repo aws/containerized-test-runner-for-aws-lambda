@@ -1,9 +1,8 @@
 FROM python:3.14-slim
 
-# Install jq and Docker CLI
+# Install Docker CLI
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    jq \
     ca-certificates \
     curl \
     && curl -fsSL https://get.docker.com -o get-docker.sh \

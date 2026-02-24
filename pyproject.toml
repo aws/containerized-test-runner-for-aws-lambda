@@ -14,6 +14,7 @@ packages = [{include = "containerized_test_runner", from = "src"}]
 requires-python = ">=3.14" 
 dependencies = [
     "requests>=2.31.0",
+    "jq>=1.6.0",
 ]
 
 [project.optional-dependencies]
@@ -23,6 +24,7 @@ dev = [
 ]
 test = [
     "pytest",
+    "jq",
 ]
 
 [tool.setuptools.packages.find]
