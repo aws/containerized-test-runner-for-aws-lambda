@@ -1,14 +1,9 @@
 FROM python:3.11-slim
 
-# Install build dependencies for pyjq and Docker CLI
+# Install jq and Docker CLI
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    gcc \
-    g++ \
-    make \
-    autoconf \
-    automake \
-    libtool \
+    jq \
     ca-certificates \
     curl \
     && curl -fsSL https://get.docker.com -o get-docker.sh \

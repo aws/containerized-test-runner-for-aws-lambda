@@ -3,7 +3,7 @@ import logging
 import os
 import tempfile
 import zipfile
-import pyjq
+from .jq_utils import apply_jq_transform
 
 
 class TestResources:
@@ -369,12 +369,12 @@ class AssertionEvaluator:
         content_type = value.content_type
         value = value.to_json()
         try:
-            transformed_result = pyjq.all(transform_method, value)
-            # pyjq transforms a value by JSON script and returns all results as a list.
+            transformed_result = apply_jq_transform(transform_method, value, return_all=True)
+            # jq transforms a value by JSON script and returns all results as a list.
             # it will return [None] if nothing is returned after transform
             transformed_result = [r for r in transformed_result if r is not None]
             if len(transformed_result) == 0:
-                raise Exception("pyjq transformation returned [None]")
+                raise Exception("jq transformation returned [None]")
         except Exception as e:
             value_repr = value
             try:
@@ -390,3 +390,4 @@ class AssertionEvaluator:
             )
 
         return Resource.from_value(transformed_result[0], content_type=content_type)
+
