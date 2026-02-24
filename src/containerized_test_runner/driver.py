@@ -3,8 +3,7 @@ import json
 import logging
 from typing import Any, Dict, List
 from .tester import AssertionEvaluator, InvalidResource, Resource
-
-import pyjq
+from .jq_utils import apply_jq_transform
 
 class Driver:
 
@@ -106,7 +105,7 @@ class Driver:
 
         if "transform" in resource:
             try:
-                data = pyjq.one(resource["transform"], data)
+                data = apply_jq_transform(resource["transform"], data, return_all=False)
             except Exception as e:
                 return InvalidResource(
                     "Failed to transform resource (e={}) (data='{}', transform='{}')".format(

@@ -11,10 +11,10 @@ authors = [
 ]
 packages = [{include = "containerized_test_runner", from = "src"}] 
 
-requires-python = ">=3.11,<3.12" 
+requires-python = ">=3.14" 
 dependencies = [
     "requests>=2.31.0",
-    "pyjq>=2.6.0",
+    "jq>=1.6.0",
 ]
 
 [project.optional-dependencies]
@@ -24,7 +24,7 @@ dev = [
 ]
 test = [
     "pytest",
-    "pyjq",
+    "jq",
 ]
 
 [tool.setuptools.packages.find]

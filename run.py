@@ -3,7 +3,7 @@ import json
 import subprocess
 import sys
 
-def run_test_command(json_path, docker_image_name, task_folder, driver):
+def run_test_command(json_path, docker_image_name, driver):
     """Run the test command for a specific JSON file path."""
     cmd = [
         'python',
@@ -12,10 +12,9 @@ def run_test_command(json_path, docker_image_name, task_folder, driver):
         '--test-image',
         docker_image_name,
         '--debug',
-        '--task-root',
-        task_folder,
         json_path
     ]
+    
     if driver:
         cmd += ['--driver', driver]
     
@@ -77,29 +76,42 @@ def get_required_env_var(var_name):
     
 def run():
     try:
-
         suite_files_input = get_required_env_var('INPUT_SUITE_FILE_ARRAY')
         docker_image_name = get_required_env_var('DOCKER_IMAGE_NAME')
         task_folder = get_required_env_var('TASK_FOLDER')
         github_workspace = get_required_env_var('GITHUB_WORKSPACE')
         driver = os.environ.get('DRIVER')
+        test_image_with_tasks = f"{docker_image_name}-with-tasks"
+        print(f"Building test image with tasks: {test_image_with_tasks}")
 
-        task_folder_absolute = os.path.join(github_workspace, task_folder)
+        dockerfile_content = f"""FROM {docker_image_name}
+COPY {task_folder} /var/task
+"""
+        dockerfile_path = os.path.join(github_workspace, 'Dockerfile.test-with-tasks')
+        with open(dockerfile_path, 'w') as f:
+            f.write(dockerfile_content)
 
-        # Ensure the resulting path exists
-        if not os.path.exists(task_folder_absolute):
-            raise ValueError(f"The resulting task folder path does not exist: {task_folder_absolute}")
-        
-        # Get the array from the input and parse it
+
+        build_cmd = ['docker', 'build', '-f', dockerfile_path, '-t', test_image_with_tasks, github_workspace]
+        print(f"DEBUG: Running: {' '.join(build_cmd)}")
+        build_result = subprocess.run(build_cmd, capture_output=True, text=True)
+        print(build_result.stdout)
+        if build_result.stderr:
+            print(build_result.stderr)
+        if build_result.returncode != 0:
+            raise Exception(f"Failed to build test image: {build_result.stderr}")
+
+        print(f"Successfully built {test_image_with_tasks}")
+
         suite_files = json.loads(suite_files_input)
 
         if not isinstance(suite_files, list):
             raise ValueError("Input must be a JSON array")
 
-        # Process each file
+        suite_files = json.loads(suite_files_input)
         success = True
         for file in suite_files:
-            if not run_test_command(file, docker_image_name, task_folder_absolute, driver):
+            if not run_test_command(file, test_image_with_tasks, driver):
                 success = False
 
         # Exit with appropriate status code
