@@ -228,6 +228,7 @@ class DockerDriver(Driver):
 
     def _wait_for_container_ready(self, local_address: str) -> bool:
         """Wait for container to be ready to accept requests."""
+        time.sleep(0.1)
         start_time = time.time()
         while time.time() - start_time < TIMEOUT_FOR_CONTAINER_TO_BE_READY_IN_SECONDS:
             try:

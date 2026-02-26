@@ -85,6 +85,7 @@ def create_parser():
     parser.add_argument("--driver", help="driver", default="DockerDriver")
     parser.add_argument("--hurl-image", help="hurl image with tag", default="ghcr.io/orange-opensource/hurl:latest")
     parser.add_argument("--scenario-dir", help="directory containing MC scenario Python files")
+    parser.add_argument("--task-root", dest="task_root", help="path to task directory to mount into container")
     parser.add_argument("suites", nargs='*')
     return parser
 
