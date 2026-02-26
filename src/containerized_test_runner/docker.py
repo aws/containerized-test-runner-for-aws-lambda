@@ -4,11 +4,14 @@ import subprocess
 import requests
 import os
 import time
+import threading
+from typing import Dict, List, Union
 
 logging.getLogger("urllib3").propagate = False
 
 from .tester import AssertionEvaluator, ExecutionTestSucceeded, ExecutionTestFailed, Resource, InvalidResource, Response, ErrorResponse, InvalidResourceError
 from .driver import Driver
+from .models import Request, ConcurrentTest
 
 RUNTIME_HOST_CONNECTION_TIMEOUT = 120
 TIMEOUT_FOR_CONTAINER_TO_BE_READY_IN_SECONDS = 5
@@ -76,6 +79,164 @@ class DockerDriver(Driver):
     def evaluate(self, test, assertions, response):
         tester = AssertionEvaluator(assertions)
         tester.test(test, response)
+
+    def execute_concurrent(self, concurrent_test: ConcurrentTest):
+        """Execute a concurrent test with batches of requests."""
+        self.logger.info("execute concurrent test '%s'", concurrent_test.name)
+        
+        # Start container once for all batches
+        container_id = None
+        try:
+            container_id = self._start_container(concurrent_test.handler, concurrent_test.environment_variables)
+            local_address = self._get_local_addr(container_id)
+            
+            # Wait for container to be ready
+            if not self._wait_for_container_ready(local_address):
+                raise ExecutionTestFailed(
+                    {"name": concurrent_test.name}, 
+                    ExecutionTestFailed.COMMAND_FAILED, 
+                    "Container failed to become ready"
+                )
+            
+            # Execute each batch
+            all_results = []
+            for batch_idx, batch in enumerate(concurrent_test.request_batches):
+                batch_results = self._execute_batch(batch, local_address, concurrent_test.name, batch_idx)
+                all_results.extend(batch_results)
+            
+            return all_results
+            
+        finally:
+            if container_id:
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    logs_result = subprocess.run(["docker", "logs", container_id], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    self.logger.debug("docker logs:\n%s", logs_result.stdout.decode())
+                docker_kill_cmd = ["docker", "kill", container_id]
+                subprocess.run(docker_kill_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+                self.logger.debug("Killed container [container_id = {}]".format(container_id))
+
+    def _execute_batch(self, batch: List[Request], local_address: str, test_name: str, batch_idx: int) -> List:
+        """Execute a batch of requests concurrently."""
+        if len(batch) == 1:
+            # Single request - no threading needed
+            response = self._execute_single_request(batch[0], local_address)
+            return [self._evaluate_request_response(batch[0], response, test_name, batch_idx, 0)]
+        
+        # Multiple requests - use threading
+        response_map: Dict[int, Union[Response, ErrorResponse]] = {}
+        
+        def execute_request(req_idx: int, request: Request):
+            if request.delay:
+                time.sleep(request.delay)
+            response_map[req_idx] = self._execute_single_request(request, local_address)
+        
+        threads = []
+        for i, request in enumerate(batch):
+            t = threading.Thread(target=execute_request, args=(i, request))
+            threads.append(t)
+            t.start()
+        
+        for t in threads:
+            t.join()
+        
+        # Evaluate all responses
+        results = []
+        for i, request in enumerate(batch):
+            response = response_map[i]
+            result = self._evaluate_request_response(request, response, test_name, batch_idx, i)
+            results.append(result)
+        
+        return results
+
+    def _execute_single_request(self, request: Request, local_address: str) -> Union[Response, ErrorResponse]:
+        """Execute a single request against the container."""
+        # Build headers
+        headers = {"Content-Type": request.content_type}
+        headers.update(request.headers)
+        
+        if request.client_context:
+            headers["Lambda-Runtime-Client-Context"] = json.dumps(request.client_context)
+        if request.cognito_identity:
+            if 'cognitoIdentityId' in request.cognito_identity:
+                headers["Lambda-Runtime-Cognito-Identity-Id"] = request.cognito_identity['cognitoIdentityId']
+            if 'cognitoIdentityPoolId' in request.cognito_identity:
+                headers["Lambda-Runtime-Cognito-Identity-Pool-Id"] = request.cognito_identity['cognitoIdentityPoolId']
+        if request.xray:
+            val = "Root={};Parent={};Sampled={}".format(
+                request.xray.get('traceId', '1-581cf771-a006649127e371903a2de979'),
+                request.xray.get('parentId', 'a794a187a18ff77f'),
+                request.xray.get('isSampled', '1')
+            )
+            headers["Lambda-Runtime-XRay-Trace-Header"] = val
+        
+        # Encode payload
+        if request.content_type == 'application/json':
+            req_bytes = json.dumps(request.payload).encode()
+        else:
+            req_bytes = request.payload if isinstance(request.payload, bytes) else str(request.payload).encode()
+        
+        # Make request
+        response = requests.post(
+            url=f"http://{local_address}/2015-03-31/functions/function/invocations",
+            data=req_bytes,
+            headers=headers
+        )
+        return self._render_response(response.content)
+
+    def _evaluate_request_response(self, request: Request, response: Union[Response, ErrorResponse], test_name: str, batch_idx: int, req_idx: int):
+        """Evaluate a single request's response against its assertions."""
+        if not request.assertions:
+            return ExecutionTestSucceeded({"name": f"{test_name}_batch{batch_idx}_req{req_idx}"})
+        
+        try:
+            test_context = {"name": f"{test_name}_batch{batch_idx}_req{req_idx}"}
+            self.evaluate(test_context, request.assertions, response)
+            return ExecutionTestSucceeded(test_context)
+        except ExecutionTestFailed as e:
+            return e
+
+    def _start_container(self, handler: str, environment_variables: Dict[str, str]) -> str:
+        """Start a container and return its ID."""
+        extra_docker_args = []
+        if self.entrypoint is not None:
+            extra_docker_args += ["--entrypoint", self.entrypoint]
+
+        cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "127.0.0.1:0:8080"]
+
+        if self.task_root is not None:
+            cmd += ["-v", f"{self.task_root}:/var/task"]
+
+        for key, value in environment_variables.items():
+            cmd += ["-e", f"{key}={value}"]
+
+        cmd += extra_docker_args
+        cmd += [self.test_image, handler]
+
+        self.logger.debug("cmd to run = %s", cmd)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = proc.communicate()
+        container_id = stdout.decode().rstrip()
+
+        if not container_id:
+            raise ExecutionTestFailed(
+                {"name": "container_start"}, 
+                ExecutionTestFailed.COMMAND_FAILED, 
+                f"Failed to start container. stderr: {stderr.decode()}"
+            )
+
+        return container_id
+
+    def _wait_for_container_ready(self, local_address: str) -> bool:
+        """Wait for container to be ready to accept requests."""
+        start_time = time.time()
+        while time.time() - start_time < TIMEOUT_FOR_CONTAINER_TO_BE_READY_IN_SECONDS:
+            try:
+                # Simple health check
+                response = requests.get(f"http://{local_address}/2015-03-31/functions/function/invocations", timeout=1)
+                return True
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+                time.sleep(0.5)
+        return False
 
     def _capture(self,
                  test,
