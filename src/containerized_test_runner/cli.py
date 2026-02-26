@@ -6,7 +6,7 @@ import time
 import glob
 from socket import gethostname
 
-from containerized_test_runner import Runner, ExecutionTestResults, SuiteLoader
+from containerized_test_runner import Runner, ExecutionTestResults, SuiteLoader, ScenarioLoader, ExecutionTestSucceeded, ExecutionTestFailed
 from .docker import DockerDriver
 from .docker_webapp import DockerWebAppDriver
 
@@ -84,7 +84,8 @@ def create_parser():
     parser.add_argument("--test-image", help="docker image to test")
     parser.add_argument("--driver", help="driver", default="DockerDriver")
     parser.add_argument("--hurl-image", help="hurl image with tag", default="ghcr.io/orange-opensource/hurl:latest")
-    parser.add_argument("suites", nargs='+')
+    parser.add_argument("--scenario-dir", help="directory containing MC scenario Python files")
+    parser.add_argument("suites", nargs='*')
     return parser
 
 def does_suite_have_tests(suite_results):
@@ -99,16 +100,28 @@ def execute_tests(args):
     with Runner(driver=driver, args=args) as app:
 
         suites = []
+        scenarios = []
 
-        for path in args.suites:
-            paths = glob.glob(path, recursive=True)
+        # Load traditional test suites
+        if args.suites:
+            for path in args.suites:
+                paths = glob.glob(path, recursive=True)
 
-            if len(paths) == 0:
-                logger.error("No suites found via the path '{}'.".format(path))
-                sys.exit(1)
+                if len(paths) == 0:
+                    logger.error("No suites found via the path '{}'.".format(path))
+                    sys.exit(1)
 
-            logger.debug("Found the suites {} via the path '{}'.".format(paths, path))
-            suites.extend(paths)
+                logger.debug("Found the suites {} via the path '{}'.".format(paths, path))
+                suites.extend(paths)
+
+        # Load MC scenarios if scenario directory is provided
+        if args.scenario_dir:
+            scenarios = ScenarioLoader.load_scenarios_from_directory(args.scenario_dir)
+            logger.info(f"Loaded {len(scenarios)} MC scenarios from {args.scenario_dir}")
+
+        if not suites and not scenarios:
+            logger.error("No test suites or scenarios provided.")
+            sys.exit(1)
 
         logger.debug("The list of suites to be ran is {}.".format(suites))
         logger.info("The tests are being ran on host {}".format(gethostname()))
@@ -116,6 +129,7 @@ def execute_tests(args):
         run_results = []
         exit_unsuccessfully = False
 
+        # Run traditional test suites
         for suite_file in suites:
             suite = app.load_suite_from_file(suite_file)
             suite_results = ExecutionTestResults({"name": suite["name"]})
@@ -128,6 +142,33 @@ def execute_tests(args):
                 exit_unsuccessfully = True
 
             run_results.append((suite["name"], suite_results))
+
+        # Run MC scenarios
+        for scenario in scenarios:
+            scenario_results = ExecutionTestResults({"name": scenario.name})
+            try:
+                results = driver.execute_concurrent(scenario)
+                scenario_results.evaluated = [{"name": f"{scenario.name}_req{i}"} for i in range(len(results))]
+                
+                for result in results:
+                    if isinstance(result, ExecutionTestSucceeded):
+                        scenario_results.succeeded.append(result)
+                    elif isinstance(result, ExecutionTestFailed):
+                        scenario_results.failed.append(result)
+                        scenario_results.failed_names.append(result.test.get("name", "unknown"))
+                        exit_unsuccessfully = True
+                
+            except Exception as e:
+                logger.error(f"Failed to execute scenario {scenario.name}: {e}")
+                exit_unsuccessfully = True
+                scenario_results.failed.append(ExecutionTestFailed(
+                    {"name": scenario.name}, 
+                    ExecutionTestFailed.UNKNOWN_ERROR, 
+                    str(e)
+                ))
+                scenario_results.failed_names.append(scenario.name)
+
+            run_results.append((scenario.name, scenario_results))
     
         write_test_summary(run_results)
 
