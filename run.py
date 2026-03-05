@@ -108,7 +108,6 @@ COPY {task_folder} /var/task
         if not isinstance(suite_files, list):
             raise ValueError("Input must be a JSON array")
 
-        suite_files = json.loads(suite_files_input)
         success = True
         for file in suite_files:
             if not run_test_command(file, test_image_with_tasks, driver):
