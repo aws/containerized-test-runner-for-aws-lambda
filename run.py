@@ -87,7 +87,7 @@ def run():
         task_folder = get_required_env_var('TASK_FOLDER')
         github_workspace = get_required_env_var('GITHUB_WORKSPACE')
         driver = os.environ.get('DRIVER')
-        scenario_dir= os.environ.get("SCENARIO_DIR")
+        scenario_dir= os.environ.get("INPUT_SCENARIO_DIR")
         test_image_with_tasks = f"{docker_image_name}-with-tasks"
         print(f"Building test image with tasks: {test_image_with_tasks}")
 
@@ -122,7 +122,8 @@ COPY {task_folder} /var/task
                 success = False
 
         if scenario_dir:
-            run_test_command(None, test_image_with_tasks, driver, scenario_dir)
+            if not run_test_command(None, test_image_with_tasks, driver, scenario_dir=scenario_dir):
+                success = False
 
         # Exit with appropriate status code
         sys.exit(0 if success else 1)

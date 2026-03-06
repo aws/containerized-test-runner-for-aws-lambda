@@ -211,6 +211,11 @@ class DockerDriver(Driver):
 
         cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "127.0.0.1:0:8080"]
 
+        # If a shared network is specified, attach to it so containers can reach each other
+        shared_network = os.environ.get("DOCKER_SHARED_NETWORK")
+        if shared_network:
+            cmd += ["--network", shared_network]
+
         if self.task_root is not None:
             cmd += ["-v", f"{self.task_root}:/var/task"]
 
@@ -346,27 +351,26 @@ class DockerDriver(Driver):
         return resp
 
     def _get_local_addr(self, container_id):
-        # When running in Docker-in-Docker, use the container's IP address directly
-        # First try to get the container's IP address
-        docker_inspect_cmd = ["docker", "inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", container_id]
-        docker_inspect_proc = subprocess.Popen(docker_inspect_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        ip_address = docker_inspect_proc.communicate()[0].decode().rstrip()
+        # If on a shared network, use the container's IP directly (no port mapping needed)
+        shared_network = os.environ.get("DOCKER_SHARED_NETWORK")
+        if shared_network:
+            docker_inspect_cmd = ["docker", "inspect", "-f", 
+                f'{{{{index .NetworkSettings.Networks "{shared_network}" "IPAddress"}}}}', container_id]
+            docker_inspect_proc = subprocess.Popen(docker_inspect_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+            ip_address = docker_inspect_proc.communicate()[0].decode().rstrip()
+            import re
+            if ip_address and re.match(r'^\d+\.\d+\.\d+\.\d+$', ip_address):
+                self.logger.debug(f"shared network: using container IP {ip_address}")
+                return f"{ip_address}:8080"
 
-        if ip_address and ip_address != "":
-            return "{}:8080".format(ip_address)
-
-        # Fallback: try docker port (works when running on host)
+        # Fallback: use mapped host port
         docker_port_cmd = ["docker", "port", container_id, "8080"]
         docker_port_proc = subprocess.Popen(docker_port_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
         port_output = docker_port_proc.communicate()[0].decode().rstrip()
-
         self.logger.debug(f"docker port output: '{port_output}'")
-
-        # If docker port returns a valid address, use it
         if port_output and port_output != "":
             return port_output
 
-        # Last resort: try localhost with port 8080
         self.logger.warning("Could not determine container address, using localhost:8080")
         return "127.0.0.1:8080"
 
