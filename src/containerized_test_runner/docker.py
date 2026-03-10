@@ -376,13 +376,13 @@ class DockerDriver(Driver):
 
     def _get_local_addr(self, container_id):
 
-        # Docker-in-docker: resolve via container IP (shared network or default bridge).
+        # CASE 1 Docker-in-docker: resolve via container IP (shared network or default bridge).
         if self.is_docker_in_docker:
             addr = self._resolve_via_docker_inspect(container_id)
             if addr:
                 return addr
 
-        # Running on host: use the host-mapped port.
+        # CASE 2 Running on host: use the host-mapped port.
         proc = subprocess.Popen(["docker", "port", container_id, "8080"],
                                  stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
         port_output = proc.communicate()[0].decode().rstrip()
@@ -390,6 +390,7 @@ class DockerDriver(Driver):
         if port_output:
             return port_output
 
+        # CASE 3 Fallback
         self.logger.warning("Could not determine container address, using localhost:8080")
         return "127.0.0.1:8080"
 
