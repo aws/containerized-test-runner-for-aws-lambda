@@ -23,20 +23,12 @@ inputs:
     required: false
 
 runs:
-  using: 'composite'
-  steps:
-    - name: Install test runner
-      shell: bash
-      run: pip install ${{ github.action_path }}
-
-    - name: Run tests
-      shell: bash
-      env:
-        INPUT_SUITE_FILE_ARRAY: ${{ inputs.suiteFileArray }}
-        DOCKER_IMAGE_NAME: ${{ inputs.dockerImageName }}
-        TASK_FOLDER: ${{ inputs.taskFolder }}
-        DRIVER: ${{ inputs.driver }}
-        INPUT_SCENARIO_DIR: ${{ inputs.scenarioDir }}
-        DOCKER_SHARED_NETWORK: ${{ inputs.dockerSharedNetwork }}
-        GITHUB_WORKSPACE: ${{ github.workspace }}
-      run: python ${{ github.action_path }}/run.py
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    INPUT_SUITE_FILE_ARRAY: ${{ inputs.suiteFileArray }}
+    DOCKER_IMAGE_NAME: ${{ inputs.dockerImageName }}
+    TASK_FOLDER: ${{ inputs.taskFolder }}
+    DRIVER: ${{ inputs.driver }}
+    INPUT_SCENARIO_DIR: ${{ inputs.scenarioDir }}
+    DOCKER_SHARED_NETWORK: ${{ inputs.dockerSharedNetwork }}
