@@ -27,15 +27,22 @@ jobs:
         pip install ".[test]"
         pip install .
 
+    - name: Create network for Python wildcard test
+      run: docker network create lambda-test-net-1
+
     - name: Use the current version of the GitHub action (Python) with wild card
       uses: ./
       with:
         suiteFileArray: '["./github-action-test/lambda/suite*.json"]'
         dockerImageName: 'public.ecr.aws/lambda/python:3.13'
         taskFolder: './github-action-test/lambda/tasks/python'
+        dockerSharedNetwork: 'lambda-test-net-1'
 
     - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
       run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
+
+    - name: Create network for Python test
+      run: docker network create lambda-test-net-2
 
     - name: Use the current version of the GitHub action (Python)
       uses: ./
@@ -43,13 +50,18 @@ jobs:
         suiteFileArray: '["./github-action-test/lambda/suite0.json", "./github-action-test/lambda/suite1.json"]'
         dockerImageName: 'public.ecr.aws/lambda/python:3.13'
         taskFolder: './github-action-test/lambda/tasks/python'
+        dockerSharedNetwork: 'lambda-test-net-2'
 
     - name: Clean up __pycache__ between runs to prevent side effects and start in a clean state
       run: sudo find $GITHUB_WORKSPACE -type d -name __pycache__ -exec rm -rf {} +
-  
+
+    - name: Create network for NodeJS test
+      run: docker network create lambda-test-net-3
+
     - name: Use the current version of the GitHub action (NodeJS)
       uses: ./
       with:
         suiteFileArray: '["./github-action-test/lambda/suite0.json"]'
         dockerImageName: 'public.ecr.aws/lambda/nodejs:22'
         taskFolder: './github-action-test/lambda/tasks/nodejs'
+        dockerSharedNetwork: 'lambda-test-net-3'

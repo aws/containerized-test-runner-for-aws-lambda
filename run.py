@@ -79,7 +79,16 @@ def get_required_env_var(var_name):
     if value is None:
         raise ValueError(f"Required environment variable '{var_name}' is not set")
     return value
-    
+
+def attach_to_network(network):
+    """Attach the current container to the given Docker network."""
+    container_id = subprocess.run(['cat', '/etc/hostname'], capture_output=True, text=True).stdout.strip()
+    if not container_id:
+        raise RuntimeError("Could not determine current container ID to attach to network")
+    result = subprocess.run(['docker', 'network', 'connect', network, container_id], capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"Failed to attach to network {network}: {result.stderr}")
+
 def run():
     try:
         suite_files_input = get_required_env_var('INPUT_SUITE_FILE_ARRAY')
@@ -94,18 +103,8 @@ def run():
         # If a shared network is specified, attach this container to it so it can
         # reach the Lambda containers that will be spawned on that network
         if shared_network:
-            self_id_result = subprocess.run(
-                ['cat', '/etc/hostname'], capture_output=True, text=True
-            )
-            self_container_id = self_id_result.stdout.strip()
-            if self_container_id:
-                print(f"Attaching action container {self_container_id} to network {shared_network}")
-                attach_result = subprocess.run(
-                    ['docker', 'network', 'connect', shared_network, self_container_id],
-                    capture_output=True, text=True
-                )
-                if attach_result.returncode != 0:
-                    print(f"Warning: could not attach to network {shared_network}: {attach_result.stderr}")
+            attach_to_network(shared_network)
+
         print(f"Building test image with tasks: {test_image_with_tasks}")
 
         dockerfile_content = f"""FROM {docker_image_name}

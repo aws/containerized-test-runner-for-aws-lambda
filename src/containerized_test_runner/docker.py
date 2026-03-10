@@ -1,5 +1,6 @@
 import logging
 import json
+import re
 import subprocess
 import requests
 import os
@@ -23,6 +24,8 @@ HEADER_CLIENT_CONTEXT = "Lambda-Runtime-Client-Context"
 HEADER_COGNITO_IDENTITY_ID = "Lambda-Runtime-Cognito-Identity-Id"
 HEADER_COGNITO_IDENTITY_POOL_ID = "Lambda-Runtime-Cognito-Identity-Pool-Id"
 HEADER_XRAY_TRACE = "Lambda-Runtime-XRay-Trace-Header"
+DOCKER_SHARED_NETWORK = "DOCKER_SHARED_NETWORK"
+IP_PATTERN = re.compile(r"^\d+\.\d+\.\d+\.\d+$")
 
 class DockerDriver(Driver):
     def __init__(self,  args):
@@ -31,6 +34,7 @@ class DockerDriver(Driver):
         self.test_image = args.get("test_image")
         self.task_root = args.get("task_root")
         self.entrypoint = args.get("entrypoint")
+        self.shared_network = os.environ.get(DOCKER_SHARED_NETWORK)
 
     def __str__(self):
         return "DockerDriver()"
@@ -261,6 +265,9 @@ class DockerDriver(Driver):
 
         cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "127.0.0.1:0:8080"]
 
+        if self.shared_network:
+            cmd += ["--network", self.shared_network]
+
         if self.task_root != None:
             cmd += ["-v", "{}:/var/task".format(self.task_root)]
 
@@ -351,26 +358,28 @@ class DockerDriver(Driver):
         return resp
 
     def _get_local_addr(self, container_id):
-        # If on a shared network, use the container's IP directly (no port mapping needed)
-        shared_network = os.environ.get("DOCKER_SHARED_NETWORK")
-        if shared_network:
-            docker_inspect_cmd = ["docker", "inspect", "-f", 
-                f'{{{{index .NetworkSettings.Networks "{shared_network}" "IPAddress"}}}}', container_id]
-            docker_inspect_proc = subprocess.Popen(docker_inspect_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-            ip_address = docker_inspect_proc.communicate()[0].decode().rstrip()
-            import re
-            if ip_address and re.match(r'^\d+\.\d+\.\d+\.\d+$', ip_address):
-                self.logger.debug(f"shared network: using container IP {ip_address}")
-                return f"{ip_address}:8080"
 
-        # Fallback: use mapped host port
-        docker_port_cmd = ["docker", "port", container_id, "8080"]
-        docker_port_proc = subprocess.Popen(docker_port_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        port_output = docker_port_proc.communicate()[0].decode().rstrip()
-        self.logger.debug(f"docker port output: '{port_output}'")
-        if port_output and port_output != "":
+        # Case 1: when running docker-in-docker, we require the user to provide a shared network so
+        #         the action container and the Lambda containers can communicate via their container IPs.
+        if self.shared_network:
+            cmd = ["docker", "inspect", "-f",
+                   f'{{{{index .NetworkSettings.Networks "{self.shared_network}" "IPAddress"}}}}',
+                   container_id]
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+            ip = proc.communicate()[0].decode().rstrip()
+            if ip and IP_PATTERN.match(ip):
+                self.logger.debug("docker-in-docker + shared network: using container IP %s", ip)
+                return ip + ":8080"
+
+        # Case 2: running on host
+        proc = subprocess.Popen(["docker", "port", container_id, "8080"],
+                                 stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        port_output = proc.communicate()[0].decode().rstrip()
+        self.logger.debug("host mapped port: '%s'", port_output)
+        if port_output:
             return port_output
 
+        # Last resort: try localhost with port 8080
         self.logger.warning("Could not determine container address, using localhost:8080")
         return "127.0.0.1:8080"
 
@@ -378,9 +387,12 @@ class DockerDriver(Driver):
         start_time = time.time()
         while time.time() - start_time < timeout:
             try:
-                response = requests.post(url="http://{}/2015-03-31/functions/function/invocations".format(local_address), data=req_bytes, headers=headers)
-                response = self._render_response(response.content)
-                return response
+                response = requests.post(
+                    url="http://{}/2015-03-31/functions/function/invocations".format(local_address),
+                    data=req_bytes,
+                    headers=headers
+                )
+                return self._render_response(response.content)
             except requests.exceptions.ConnectionError:
                 time.sleep(1)
         return None
