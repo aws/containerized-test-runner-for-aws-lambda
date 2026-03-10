@@ -4,6 +4,11 @@ import subprocess
 import sys
 
 
+MULTI_CONCURRENCY_NETWORK_NAME = 'multi-concurrent-network'
+
+def is_multi_concurrent():
+    return os.environ.get("INPUT_SCENARIO_DIR") is not None
+
 def run_test_command(json_path, docker_image_name, driver, scenario_dir=None):
     """Run the test command for a specific JSON file path."""
     cmd = [
@@ -16,7 +21,7 @@ def run_test_command(json_path, docker_image_name, driver, scenario_dir=None):
     ]
 
     if json_path:
-        cmd.append(json_path)   #
+        cmd.append(json_path)
     
     if driver:
         cmd += ['--driver', driver]
@@ -80,6 +85,9 @@ def get_required_env_var(var_name):
         raise ValueError(f"Required environment variable '{var_name}' is not set")
     return value
 
+def create_network():
+    subprocess.run(['docker', 'network', 'create', MULTI_CONCURRENCY_NETWORK_NAME], check=True, capture_output=True)
+
 def attach_to_network(network):
     """Attach the current container to the given Docker network."""
     container_id = subprocess.run(['cat', '/etc/hostname'], capture_output=True, text=True).stdout.strip()
@@ -89,6 +97,10 @@ def attach_to_network(network):
     if result.returncode != 0:
         raise RuntimeError(f"Failed to attach to network {network}: {result.stderr}")
 
+def remove_network():
+    return subprocess.run(['docker', 'network', 'rm', MULTI_CONCURRENCY_NETWORK_NAME], check=True, capture_output=True)
+
+
 def run():
     try:
         suite_files_input = get_required_env_var('INPUT_SUITE_FILE_ARRAY')
@@ -97,13 +109,14 @@ def run():
         github_workspace = get_required_env_var('GITHUB_WORKSPACE')
         driver = os.environ.get('DRIVER')
         scenario_dir = os.environ.get("INPUT_SCENARIO_DIR")
-        shared_network = os.environ.get("DOCKER_SHARED_NETWORK")
         test_image_with_tasks = f"{docker_image_name}-with-tasks"
 
-        # If a shared network is specified, attach this container to it so it can
-        # reach the Lambda containers that will be spawned on that network
-        if shared_network:
-            attach_to_network(shared_network)
+        # When multi-concurrency testing is enabled, create a shared network
+        # and attach this container to it so it can reach the Lambda containers.
+        if is_multi_concurrent():
+            create_network()
+            attach_to_network(MULTI_CONCURRENCY_NETWORK_NAME)
+            os.environ["DOCKER_SHARED_NETWORK"] = MULTI_CONCURRENCY_NETWORK_NAME
 
         print(f"Building test image with tasks: {test_image_with_tasks}")
 
@@ -113,7 +126,6 @@ COPY {task_folder} /var/task
         dockerfile_path = os.path.join(github_workspace, 'Dockerfile.test-with-tasks')
         with open(dockerfile_path, 'w') as f:
             f.write(dockerfile_content)
-
 
         build_cmd = ['docker', 'build', '-f', dockerfile_path, '-t', test_image_with_tasks, github_workspace]
         print(f"DEBUG: Running: {' '.join(build_cmd)}")
@@ -133,12 +145,18 @@ COPY {task_folder} /var/task
             raise ValueError("Input must be a JSON array")
 
         success = True
+
+        # we go either multiconcurrency or not.
+        if is_multi_concurrent():
+            try:
+                if not run_test_command(None, test_image_with_tasks, driver, scenario_dir=scenario_dir):
+                    success = False
+            finally:
+                remove_network()
+            sys.exit(0 if success else 1)
+
         for file in suite_files:
             if not run_test_command(file, test_image_with_tasks, driver):
-                success = False
-
-        if scenario_dir:
-            if not run_test_command(None, test_image_with_tasks, driver, scenario_dir=scenario_dir):
                 success = False
 
         # Exit with appropriate status code

@@ -35,6 +35,7 @@ class DockerDriver(Driver):
         self.task_root = args.get("task_root")
         self.entrypoint = args.get("entrypoint")
         self.shared_network = os.environ.get(DOCKER_SHARED_NETWORK)
+        self.is_docker_in_docker = os.path.exists("/.dockerenv")
 
     def __str__(self):
         return "DockerDriver()"
@@ -216,9 +217,8 @@ class DockerDriver(Driver):
         cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "127.0.0.1:0:8080"]
 
         # If a shared network is specified, attach to it so containers can reach each other
-        shared_network = os.environ.get("DOCKER_SHARED_NETWORK")
-        if shared_network:
-            cmd += ["--network", shared_network]
+        if self.shared_network:
+            cmd += ["--network", self.shared_network]
 
         if self.task_root is not None:
             cmd += ["-v", f"{self.task_root}:/var/task"]
@@ -265,10 +265,7 @@ class DockerDriver(Driver):
 
         cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "127.0.0.1:0:8080"]
 
-        if self.shared_network:
-            cmd += ["--network", self.shared_network]
-
-        if self.task_root != None:
+        if self.task_root is not None:
             cmd += ["-v", "{}:/var/task".format(self.task_root)]
 
         try:
@@ -357,21 +354,35 @@ class DockerDriver(Driver):
             resp = Response("application/unknown", resp)
         return resp
 
+
+    def _resolve_via_docker_inspect(self, container_id):
+        """Resolve the container IP via docker inspect. Returns IP:8080 or None.
+
+        When a shared network is configured, queries that specific network.
+        Otherwise falls back to the first IP across all attached networks (default bridge).
+        """
+        if self.shared_network:
+            fmt = f'{{{{index .NetworkSettings.Networks "{self.shared_network}" "IPAddress"}}}}'
+        else:
+            fmt = "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}"
+
+        cmd = ["docker", "inspect", "-f", fmt, container_id]
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        ip = proc.communicate()[0].decode().rstrip()
+        if ip and IP_PATTERN.match(ip):
+            self.logger.debug("container IP: %s", ip)
+            return ip + ":8080"
+        return None
+
     def _get_local_addr(self, container_id):
 
-        # Case 1: when running docker-in-docker, we require the user to provide a shared network so
-        #         the action container and the Lambda containers can communicate via their container IPs.
-        if self.shared_network:
-            cmd = ["docker", "inspect", "-f",
-                   f'{{{{index .NetworkSettings.Networks "{self.shared_network}" "IPAddress"}}}}',
-                   container_id]
-            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-            ip = proc.communicate()[0].decode().rstrip()
-            if ip and IP_PATTERN.match(ip):
-                self.logger.debug("docker-in-docker + shared network: using container IP %s", ip)
-                return ip + ":8080"
+        # Docker-in-docker: resolve via container IP (shared network or default bridge).
+        if self.is_docker_in_docker:
+            addr = self._resolve_via_docker_inspect(container_id)
+            if addr:
+                return addr
 
-        # Case 2: running on host
+        # Running on host: use the host-mapped port.
         proc = subprocess.Popen(["docker", "port", container_id, "8080"],
                                  stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
         port_output = proc.communicate()[0].decode().rstrip()
@@ -379,7 +390,6 @@ class DockerDriver(Driver):
         if port_output:
             return port_output
 
-        # Last resort: try localhost with port 8080
         self.logger.warning("Could not determine container address, using localhost:8080")
         return "127.0.0.1:8080"
 
