@@ -7,7 +7,7 @@ import sys
 MULTI_CONCURRENCY_NETWORK_NAME = 'multi-concurrent-network'
 
 def is_multi_concurrent():
-    return os.environ.get("INPUT_SCENARIO_DIR") is not None
+    return bool(os.environ.get("INPUT_SCENARIO_DIR"))
 
 def run_test_command(json_path, docker_image_name, driver, scenario_dir=None):
     """Run the test command for a specific JSON file path."""
@@ -85,12 +85,16 @@ def get_required_env_var(var_name):
         raise ValueError(f"Required environment variable '{var_name}' is not set")
     return value
 
+def _get_container_id():
+    """Read the current container ID from /etc/hostname."""
+    return subprocess.run(['cat', '/etc/hostname'], capture_output=True, text=True).stdout.strip()
+
 def create_network():
     subprocess.run(['docker', 'network', 'create', MULTI_CONCURRENCY_NETWORK_NAME], check=True, capture_output=True)
 
 def attach_to_network(network):
     """Attach the current container to the given Docker network."""
-    container_id = subprocess.run(['cat', '/etc/hostname'], capture_output=True, text=True).stdout.strip()
+    container_id = _get_container_id()
     if not container_id:
         raise RuntimeError("Could not determine current container ID to attach to network")
     result = subprocess.run(['docker', 'network', 'connect', network, container_id], capture_output=True, text=True)
@@ -98,7 +102,14 @@ def attach_to_network(network):
         raise RuntimeError(f"Failed to attach to network {network}: {result.stderr}")
 
 def remove_network():
-    return subprocess.run(['docker', 'network', 'rm', MULTI_CONCURRENCY_NETWORK_NAME], check=True, capture_output=True)
+    """Disconnect all containers from the network, then remove it."""
+    result = subprocess.run(
+        ['docker', 'network', 'inspect', '-f', '{{range .Containers}}{{.Name}} {{end}}', MULTI_CONCURRENCY_NETWORK_NAME],
+        capture_output=True, text=True
+    )
+    for name in result.stdout.split():
+        subprocess.run(['docker', 'network', 'disconnect', MULTI_CONCURRENCY_NETWORK_NAME, name], capture_output=True)
+    subprocess.run(['docker', 'network', 'rm', MULTI_CONCURRENCY_NETWORK_NAME], check=True, capture_output=True)
 
 
 def run():
