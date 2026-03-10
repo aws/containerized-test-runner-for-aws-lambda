@@ -3,7 +3,13 @@ import json
 import subprocess
 import sys
 
-def run_test_command(json_path, docker_image_name, driver):
+
+MULTI_CONCURRENCY_NETWORK_NAME = 'multi-concurrent-network'
+
+def is_multi_concurrent():
+    return bool(os.environ.get("INPUT_SCENARIO_DIR"))
+
+def run_test_command(json_path, docker_image_name, driver, scenario_dir=None):
     """Run the test command for a specific JSON file path."""
     cmd = [
         'python',
@@ -11,12 +17,17 @@ def run_test_command(json_path, docker_image_name, driver):
         'containerized_test_runner.cli',
         '--test-image',
         docker_image_name,
-        '--debug',
-        json_path
+        '--debug'
     ]
+
+    if json_path:
+        cmd.append(json_path)
     
     if driver:
         cmd += ['--driver', driver]
+
+    if scenario_dir:
+        cmd += ['--scenario-dir', scenario_dir]
     
     try:
         # Use Popen to get real-time output
@@ -73,7 +84,34 @@ def get_required_env_var(var_name):
     if value is None:
         raise ValueError(f"Required environment variable '{var_name}' is not set")
     return value
-    
+
+def _get_container_id():
+    """Read the current container ID from /etc/hostname."""
+    return subprocess.run(['cat', '/etc/hostname'], capture_output=True, text=True).stdout.strip()
+
+def create_network():
+    subprocess.run(['docker', 'network', 'create', MULTI_CONCURRENCY_NETWORK_NAME], check=True, capture_output=True)
+
+def attach_to_network(network):
+    """Attach the current container to the given Docker network."""
+    container_id = _get_container_id()
+    if not container_id:
+        raise RuntimeError("Could not determine current container ID to attach to network")
+    result = subprocess.run(['docker', 'network', 'connect', network, container_id], capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"Failed to attach to network {network}: {result.stderr}")
+
+def remove_network():
+    """Disconnect all containers from the network, then remove it."""
+    result = subprocess.run(
+        ['docker', 'network', 'inspect', '-f', '{{range .Containers}}{{.Name}} {{end}}', MULTI_CONCURRENCY_NETWORK_NAME],
+        capture_output=True, text=True
+    )
+    for name in result.stdout.split():
+        subprocess.run(['docker', 'network', 'disconnect', MULTI_CONCURRENCY_NETWORK_NAME, name], capture_output=True)
+    subprocess.run(['docker', 'network', 'rm', MULTI_CONCURRENCY_NETWORK_NAME], check=True, capture_output=True)
+
+
 def run():
     try:
         suite_files_input = get_required_env_var('INPUT_SUITE_FILE_ARRAY')
@@ -81,7 +119,16 @@ def run():
         task_folder = get_required_env_var('TASK_FOLDER')
         github_workspace = get_required_env_var('GITHUB_WORKSPACE')
         driver = os.environ.get('DRIVER')
+        scenario_dir = os.environ.get("INPUT_SCENARIO_DIR")
         test_image_with_tasks = f"{docker_image_name}-with-tasks"
+
+        # When multi-concurrency testing is enabled, create a shared network
+        # and attach this container to it so it can reach the Lambda containers.
+        if is_multi_concurrent():
+            create_network()
+            attach_to_network(MULTI_CONCURRENCY_NETWORK_NAME)
+            os.environ["DOCKER_SHARED_NETWORK"] = MULTI_CONCURRENCY_NETWORK_NAME
+
         print(f"Building test image with tasks: {test_image_with_tasks}")
 
         dockerfile_content = f"""FROM {docker_image_name}
@@ -90,7 +137,6 @@ COPY {task_folder} /var/task
         dockerfile_path = os.path.join(github_workspace, 'Dockerfile.test-with-tasks')
         with open(dockerfile_path, 'w') as f:
             f.write(dockerfile_content)
-
 
         build_cmd = ['docker', 'build', '-f', dockerfile_path, '-t', test_image_with_tasks, github_workspace]
         print(f"DEBUG: Running: {' '.join(build_cmd)}")
@@ -103,13 +149,23 @@ COPY {task_folder} /var/task
 
         print(f"Successfully built {test_image_with_tasks}")
 
+        # todo change it with suite loader
         suite_files = json.loads(suite_files_input)
 
         if not isinstance(suite_files, list):
             raise ValueError("Input must be a JSON array")
 
-        suite_files = json.loads(suite_files_input)
         success = True
+
+        # we go either multiconcurrency or not.
+        if is_multi_concurrent():
+            try:
+                if not run_test_command(None, test_image_with_tasks, driver, scenario_dir=scenario_dir):
+                    success = False
+            finally:
+                remove_network()
+            sys.exit(0 if success else 1)
+
         for file in suite_files:
             if not run_test_command(file, test_image_with_tasks, driver):
                 success = False

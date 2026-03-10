@@ -1,5 +1,6 @@
 import logging
 import json
+import re
 import subprocess
 import requests
 import os
@@ -23,6 +24,8 @@ HEADER_CLIENT_CONTEXT = "Lambda-Runtime-Client-Context"
 HEADER_COGNITO_IDENTITY_ID = "Lambda-Runtime-Cognito-Identity-Id"
 HEADER_COGNITO_IDENTITY_POOL_ID = "Lambda-Runtime-Cognito-Identity-Pool-Id"
 HEADER_XRAY_TRACE = "Lambda-Runtime-XRay-Trace-Header"
+DOCKER_SHARED_NETWORK = "DOCKER_SHARED_NETWORK"
+IP_PATTERN = re.compile(r"^\d+\.\d+\.\d+\.\d+$")
 
 class DockerDriver(Driver):
     def __init__(self,  args):
@@ -31,6 +34,8 @@ class DockerDriver(Driver):
         self.test_image = args.get("test_image")
         self.task_root = args.get("task_root")
         self.entrypoint = args.get("entrypoint")
+        self.shared_network = os.environ.get(DOCKER_SHARED_NETWORK)
+        self.is_docker_in_docker = os.path.exists("/.dockerenv")
 
     def __str__(self):
         return "DockerDriver()"
@@ -211,6 +216,10 @@ class DockerDriver(Driver):
 
         cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "127.0.0.1:0:8080"]
 
+        # If a shared network is specified, attach to it so containers can reach each other
+        if self.shared_network:
+            cmd += ["--network", self.shared_network]
+
         if self.task_root is not None:
             cmd += ["-v", f"{self.task_root}:/var/task"]
 
@@ -256,7 +265,7 @@ class DockerDriver(Driver):
 
         cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "127.0.0.1:0:8080"]
 
-        if self.task_root != None:
+        if self.task_root is not None:
             cmd += ["-v", "{}:/var/task".format(self.task_root)]
 
         try:
@@ -345,28 +354,43 @@ class DockerDriver(Driver):
             resp = Response("application/unknown", resp)
         return resp
 
+
+    def _resolve_via_docker_inspect(self, container_id):
+        """Resolve the container IP via docker inspect. Returns IP:8080 or None.
+
+        When a shared network is configured, queries that specific network.
+        Otherwise falls back to the first IP across all attached networks (default bridge).
+        """
+        if self.shared_network:
+            fmt = f'{{{{index .NetworkSettings.Networks "{self.shared_network}" "IPAddress"}}}}'
+        else:
+            fmt = "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}"
+
+        cmd = ["docker", "inspect", "-f", fmt, container_id]
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        ip = proc.communicate()[0].decode().rstrip()
+        if ip and IP_PATTERN.match(ip):
+            self.logger.debug("container IP: %s", ip)
+            return ip + ":8080"
+        return None
+
     def _get_local_addr(self, container_id):
-        # When running in Docker-in-Docker, use the container's IP address directly
-        # First try to get the container's IP address
-        docker_inspect_cmd = ["docker", "inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", container_id]
-        docker_inspect_proc = subprocess.Popen(docker_inspect_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        ip_address = docker_inspect_proc.communicate()[0].decode().rstrip()
 
-        if ip_address and ip_address != "":
-            return "{}:8080".format(ip_address)
+        # CASE 1 Docker-in-docker: resolve via container IP (shared network or default bridge).
+        if self.is_docker_in_docker:
+            addr = self._resolve_via_docker_inspect(container_id)
+            if addr:
+                return addr
 
-        # Fallback: try docker port (works when running on host)
-        docker_port_cmd = ["docker", "port", container_id, "8080"]
-        docker_port_proc = subprocess.Popen(docker_port_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-        port_output = docker_port_proc.communicate()[0].decode().rstrip()
-
-        self.logger.debug(f"docker port output: '{port_output}'")
-
-        # If docker port returns a valid address, use it
-        if port_output and port_output != "":
+        # CASE 2 Running on host: use the host-mapped port.
+        proc = subprocess.Popen(["docker", "port", container_id, "8080"],
+                                 stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        port_output = proc.communicate()[0].decode().rstrip()
+        self.logger.debug("host mapped port: '%s'", port_output)
+        if port_output:
             return port_output
 
-        # Last resort: try localhost with port 8080
+        # CASE 3 Fallback
         self.logger.warning("Could not determine container address, using localhost:8080")
         return "127.0.0.1:8080"
 
@@ -374,9 +398,12 @@ class DockerDriver(Driver):
         start_time = time.time()
         while time.time() - start_time < timeout:
             try:
-                response = requests.post(url="http://{}/2015-03-31/functions/function/invocations".format(local_address), data=req_bytes, headers=headers)
-                response = self._render_response(response.content)
-                return response
+                response = requests.post(
+                    url="http://{}/2015-03-31/functions/function/invocations".format(local_address),
+                    data=req_bytes,
+                    headers=headers
+                )
+                return self._render_response(response.content)
             except requests.exceptions.ConnectionError:
                 time.sleep(1)
         return None

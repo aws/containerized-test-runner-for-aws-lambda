@@ -15,7 +15,9 @@ inputs:
   driver:
     description: 'Driver to use'
     required: false
-
+  scenarioDir:
+    description: 'Directory containing scenario files'
+    required: false
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -24,3 +26,4 @@ runs:
     DOCKER_IMAGE_NAME: ${{ inputs.dockerImageName }}
     TASK_FOLDER: ${{ inputs.taskFolder }}
     DRIVER: ${{ inputs.driver }}
+    INPUT_SCENARIO_DIR: ${{ inputs.scenarioDir }}
