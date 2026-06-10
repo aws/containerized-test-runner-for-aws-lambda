@@ -189,8 +189,9 @@ class DockerDriver(Driver):
             req_bytes = request.payload if isinstance(request.payload, bytes) else str(request.payload).encode()
         
         # Make request
-        response = requests.post(
-            url=f"http://{local_address}/2015-03-31/functions/function/invocations",
+        response = requests.request(
+            method=request.method,
+            url=f"http://{local_address}{request.path}",
             data=req_bytes,
             headers=headers
         )

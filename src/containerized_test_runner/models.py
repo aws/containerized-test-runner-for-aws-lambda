@@ -19,6 +19,8 @@ class Request:
     client_context: Optional[Dict[str, Any]] = None
     cognito_identity: Optional[Dict[str, Any]] = None
     xray: Optional[Dict[str, Any]] = None
+    method: str = "POST"
+    path: str = "/2015-03-31/functions/function/invocations"
 
     @classmethod
     def create(cls, payload: Any, assertions: Optional[Dict] = None, **kwargs) -> "Request":
