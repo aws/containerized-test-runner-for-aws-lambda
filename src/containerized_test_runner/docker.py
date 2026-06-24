@@ -121,17 +121,18 @@ class DockerDriver(Driver):
             
         finally:
             if container_id:
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    logs_result = subprocess.run(["docker", "logs", container_id], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                    self.logger.debug("docker logs:\n%s", logs_result.stdout.decode())
-                docker_kill_cmd = ["docker", "kill", container_id]
-                subprocess.run(docker_kill_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-                self.logger.debug("Killed container [container_id = {}]".format(container_id))
+                logs_result = subprocess.run(["docker", "logs", container_id], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                self.logger.info("docker logs [container_id = %s]:\n%s", container_id, logs_result.stdout.decode())
+                subprocess.run(["docker", "kill", container_id], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+                subprocess.run(["docker", "rm", container_id], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                self.logger.debug("Killed and removed container [container_id = %s]", container_id)
 
     def _execute_batch(self, batch: List[Request], local_address: str, test_name: str, batch_idx: int) -> List:
         """Execute a batch of requests concurrently."""
         if len(batch) == 1:
             # Single request - no threading needed
+            if batch[0].delay:
+                time.sleep(batch[0].delay)
             response = self._execute_single_request(batch[0], local_address)
             return [self._evaluate_request_response(batch[0], response, test_name, batch_idx, 0)]
         
@@ -215,7 +216,7 @@ class DockerDriver(Driver):
         if self.entrypoint is not None:
             extra_docker_args += ["--entrypoint", self.entrypoint]
 
-        cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "127.0.0.1:0:8080"]
+        cmd = ["docker", "run", "-d", "-i", "-p", "127.0.0.1:0:8080"]
 
         # If a shared network is specified, attach to it so containers can reach each other
         if self.shared_network:
@@ -246,7 +247,7 @@ class DockerDriver(Driver):
 
     def _wait_for_container_ready(self, local_address: str) -> bool:
         """Wait for container to be ready to accept requests."""
-        time.sleep(CONTAINER_READY_DELAY_SECS)
+        time.sleep(max(CONTAINER_READY_DELAY_SECS, 3))
         return True
 
     def _capture(self,
@@ -264,7 +265,7 @@ class DockerDriver(Driver):
         if self.entrypoint is not None:
             extra_docker_args += ["--entrypoint", self.entrypoint]
 
-        cmd = ["docker", "run", "-d", "-i", "--rm", "-p", "127.0.0.1:0:8080"]
+        cmd = ["docker", "run", "-d", "-i", "-p", "127.0.0.1:0:8080"]
 
         if self.task_root is not None:
             cmd += ["-v", "{}:/var/task".format(self.task_root)]
@@ -328,12 +329,11 @@ class DockerDriver(Driver):
             raise ExecutionTestFailed(test, ExecutionTestFailed.UNKNOWN_ERROR, "Unknown error occurred (e={})".format(e))
         finally:
             if container_id:
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    logs_result = subprocess.run(["docker", "logs", container_id], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                    self.logger.debug("docker logs:\n%s", logs_result.stdout.decode())
-                docker_kill_cmd = ["docker", "kill", container_id]
-                subprocess.run(docker_kill_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-                self.logger.debug("Killed container [container_id = {}]".format(container_id))
+                logs_result = subprocess.run(["docker", "logs", container_id], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                self.logger.info("docker logs [container_id = %s]:\n%s", container_id, logs_result.stdout.decode())
+                subprocess.run(["docker", "kill", container_id], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+                subprocess.run(["docker", "rm", container_id], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                self.logger.debug("Killed and removed container [container_id = %s]", container_id)
 
         return response
 
