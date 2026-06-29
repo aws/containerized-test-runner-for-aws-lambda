@@ -12,7 +12,7 @@ jobs:
     permissions:
       contents: read
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Use the current version of the GitHub action (Python) with wild card
       uses: ./
