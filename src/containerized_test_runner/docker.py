@@ -13,6 +13,7 @@ logging.getLogger("urllib3").propagate = False
 from .tester import AssertionEvaluator, ExecutionTestSucceeded, ExecutionTestFailed, Resource, InvalidResource, Response, ErrorResponse, InvalidResourceError
 from .driver import Driver
 from .models import Request, ConcurrentTest
+from .logger import log_group
 
 RUNTIME_HOST_CONNECTION_TIMEOUT = 120
 TIMEOUT_FOR_CONTAINER_TO_BE_READY_IN_SECONDS = 5
@@ -144,16 +145,8 @@ class DockerDriver(Driver):
         )
         logs_output = logs_result.stdout.decode()
 
-        is_gha = os.environ.get("GITHUB_ACTIONS") == "true"
-        if is_gha:
-            print(f"::group::Container logs for {test_name}")
-        else:
-            print(f"--- Container logs for {test_name} ---")
-
-        print(logs_output[-5000:] if len(logs_output) > 5000 else logs_output)
-
-        if is_gha:
-            print("::endgroup::")
+        with log_group(f"Container logs for {test_name}"):
+            print(logs_output[-5000:] if len(logs_output) > 5000 else logs_output)
 
     def _execute_batch(self, batch: List[Request], local_address: str, test_name: str, batch_idx: int) -> List:
         """Execute a batch of requests concurrently."""

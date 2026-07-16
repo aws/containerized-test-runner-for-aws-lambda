@@ -1,7 +1,7 @@
 FROM python:3.14-slim
 
 # Copy Docker CLI from the official image (pinned version, no curl | sh)
-COPY --from=docker:27.5.1-cli /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=docker:cli /usr/local/bin/docker /usr/local/bin/docker
 
 WORKDIR /app
 
