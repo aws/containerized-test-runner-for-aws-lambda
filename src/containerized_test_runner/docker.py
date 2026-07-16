@@ -117,16 +117,39 @@ class DockerDriver(Driver):
                 batch_results = self._execute_batch(batch, local_address, concurrent_test.name, batch_idx)
                 all_results.extend(batch_results)
             
+            # Dump container logs on failure (always, not just in debug mode)
+            has_failures = any(isinstance(r, ExecutionTestFailed) for r in all_results)
+            if has_failures:
+                self._dump_container_logs(container_id, concurrent_test.name)
+            elif self.logger.isEnabledFor(logging.DEBUG):
+                self._dump_container_logs(container_id, concurrent_test.name)
+
             return all_results
             
         finally:
             if container_id:
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    logs_result = subprocess.run(["docker", "logs", container_id], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                    self.logger.debug("docker logs:\n%s", logs_result.stdout.decode())
                 docker_kill_cmd = ["docker", "kill", container_id]
                 subprocess.run(docker_kill_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
                 self.logger.debug("Killed container [container_id = {}]".format(container_id))
+
+    def _dump_container_logs(self, container_id: str, test_name: str):
+        """Capture and print container logs, using GHA grouping if available."""
+        logs_result = subprocess.run(
+            ["docker", "logs", container_id],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+        logs_output = logs_result.stdout.decode()
+
+        is_gha = os.environ.get("GITHUB_ACTIONS") == "true"
+        if is_gha:
+            print(f"::group::Container logs for {test_name}")
+        else:
+            print(f"--- Container logs for {test_name} ---")
+
+        print(logs_output[-5000:] if len(logs_output) > 5000 else logs_output)
+
+        if is_gha:
+            print("::endgroup::")
 
     def _execute_batch(self, batch: List[Request], local_address: str, test_name: str, batch_idx: int) -> List:
         """Execute a batch of requests concurrently."""

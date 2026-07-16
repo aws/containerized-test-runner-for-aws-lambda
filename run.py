@@ -22,58 +22,28 @@ def run_test_command(json_path, docker_image_name, driver, scenario_dir=None):
 
     if json_path:
         cmd.append(json_path)
-    
+
     if driver:
         cmd += ['--driver', driver]
 
     if scenario_dir:
         cmd += ['--scenario-dir', scenario_dir]
-    
+
     try:
-        # Use Popen to get real-time output
-        process = subprocess.Popen(
-            ' '.join(cmd),
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-            universal_newlines=True
-        )
+        print(f"DEBUG: Running: {' '.join(cmd)}")
+        sys.stdout.flush()
+        result = subprocess.run(cmd, text=True, timeout=600)
 
-        # Capture output in real-time
-        stdout_output = []
-        stderr_output = []
-        while True:
-            stdout_line = process.stdout.readline()
-            stderr_line = process.stderr.readline()
-            
-            if stdout_line:
-                print(stdout_line.strip())
-                stdout_output.append(stdout_line)
-            if stderr_line:
-                print(stderr_line.strip(), file=sys.stderr)
-                stderr_output.append(stderr_line)
-            
-            if process.poll() is not None:
-                break
-
-        # Get any remaining output
-        stdout, stderr = process.communicate()
-        if stdout:
-            print(stdout.strip())
-            stdout_output.append(stdout)
-        if stderr:
-            print(stderr.strip(), file=sys.stderr)
-            stderr_output.append(stderr)
-
-        if process.returncode == 0:
+        if result.returncode == 0:
             print(f"Successfully processed {json_path}")
             return True
         else:
-            print(f"Error processing {json_path}: Return code {process.returncode}")
+            print(f"Error processing {json_path}: Return code {result.returncode}")
             return False
 
+    except subprocess.TimeoutExpired:
+        print(f"Error: Command timed out after 600s: {' '.join(cmd)}")
+        return False
     except Exception as e:
         print(f"Error processing {json_path}: {str(e)}")
         return False
@@ -140,12 +110,10 @@ COPY {task_folder} /var/task
 
         build_cmd = ['docker', 'build', '-f', dockerfile_path, '-t', test_image_with_tasks, github_workspace]
         print(f"DEBUG: Running: {' '.join(build_cmd)}")
-        build_result = subprocess.run(build_cmd, capture_output=True, text=True)
-        print(build_result.stdout)
-        if build_result.stderr:
-            print(build_result.stderr)
+        sys.stdout.flush()
+        build_result = subprocess.run(build_cmd, text=True, timeout=120)
         if build_result.returncode != 0:
-            raise Exception(f"Failed to build test image: {build_result.stderr}")
+            raise Exception(f"Failed to build test image (exit code {build_result.returncode})")
 
         print(f"Successfully built {test_image_with_tasks}")
 

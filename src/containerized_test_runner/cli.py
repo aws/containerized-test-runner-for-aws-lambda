@@ -48,6 +48,17 @@ def write_test_summary(run_results):
         if not does_suite_have_tests(suite_results):
             totals["empty_suites"].append(suite_name)
 
+    # Print structured failure details
+    if totals["failed"] > 0:
+        print("")
+        print("=" * 80)
+        print("FAILURES")
+        print("=" * 80)
+        for (suite_name, suite_results) in run_results:
+            for failure in suite_results.failed:
+                _print_failure_detail(suite_name, failure)
+        print("=" * 80)
+
     print("")
     if len(totals["failed_names"]) > 0:
         print("Failed Tests")
@@ -76,6 +87,30 @@ def write_test_summary(run_results):
         0,
         totals["skipped"],
     ))
+
+    # Emit GHA annotations (shows in workflow summary)
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        if totals["failed"] > 0:
+            for (suite_name, suite_results) in run_results:
+                for failure in suite_results.failed:
+                    test_name = failure.test.get("name", "unknown") if hasattr(failure, "test") else "unknown"
+                    msg = getattr(failure, "msg", str(failure)) or str(failure)
+                    print(f"::error title={suite_name}/{test_name}::{msg}")
+        else:
+            print(f"::notice title=Tests Passed::{totals['succeeded']} passed, {totals['skipped']} skipped")
+
+
+def _print_failure_detail(suite_name, failure):
+    """Print a structured failure block for a single test failure."""
+    test_name = failure.test.get("name", "unknown") if hasattr(failure, "test") else "unknown"
+    fail_type = getattr(failure, "type", "unknown")
+    msg = getattr(failure, "msg", str(failure)) or str(failure)
+
+    print("")
+    print(f"  FAILED: {suite_name}/{test_name}")
+    print(f"  Type:   {fail_type}")
+    print(f"  Reason: {msg}")
+    print("")
 
 
 def create_parser():
