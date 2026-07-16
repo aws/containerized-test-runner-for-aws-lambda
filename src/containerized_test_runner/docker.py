@@ -18,6 +18,10 @@ RUNTIME_HOST_CONNECTION_TIMEOUT = 120
 TIMEOUT_FOR_CONTAINER_TO_BE_READY_IN_SECONDS = 5
 # Delay in seconds before polling container readiness. Increase in slower CI environments.
 CONTAINER_READY_DELAY_SECS = float(os.environ.get("CONTAINER_READY_DELAY_SECS", "1"))
+# Timeout for HTTP requests to app containers (connect, read) in seconds.
+# Configure via REQUEST_TIMEOUT_SECS env var (default: 30s).
+_request_timeout_secs = float(os.environ.get("REQUEST_TIMEOUT_SECS", "30"))
+REQUEST_TIMEOUT = (5, _request_timeout_secs)
 
 # Lambda Runtime Interface header names
 HEADER_CLIENT_CONTEXT = "Lambda-Runtime-Client-Context"
@@ -216,7 +220,8 @@ class DockerDriver(Driver):
             method=request.method,
             url=f"http://{local_address}{request.path}",
             data=req_bytes,
-            headers=headers
+            headers=headers,
+            timeout=REQUEST_TIMEOUT,
         )
         return self._render_response(response.content)
 
@@ -425,7 +430,8 @@ class DockerDriver(Driver):
                 response = requests.post(
                     url="http://{}/2015-03-31/functions/function/invocations".format(local_address),
                     data=req_bytes,
-                    headers=headers
+                    headers=headers,
+                    timeout=REQUEST_TIMEOUT,
                 )
                 return self._render_response(response.content)
             except requests.exceptions.ConnectionError:
