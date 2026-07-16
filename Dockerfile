@@ -1,24 +1,23 @@
 FROM python:3.14-slim
 
-# Install Docker CLI
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    && curl -fsSL https://get.docker.com -o get-docker.sh \
-    && sh get-docker.sh \
-    && rm get-docker.sh \
-    && rm -rf /var/lib/apt/lists/*
+# Copy uv binary from the official image (pinned version, no remote script execution)
+COPY --from=ghcr.io/astral-sh/uv:0.7.12 /uv /usr/local/bin/uv
+
+# Copy Docker CLI from the official image (pinned version, no curl | sh)
+COPY --from=docker:27.5.1-cli /usr/local/bin/docker /usr/local/bin/docker
 
 WORKDIR /app
 
-# Copy the test runner source
-COPY . /app
+# Copy lockfile and project metadata first (cache layer)
+COPY uv.lock pyproject.toml ./
 
-# Install the test runner
-RUN pip install --no-cache-dir .
+# Copy source
+COPY src/ src/
+COPY run.py entrypoint.sh conftest.py ./
 
-# Copy entrypoint script
+# Install from lockfile — frozen ensures exact versions, no resolution
+RUN uv sync --frozen --no-dev
+
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
