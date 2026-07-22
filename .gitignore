@@ -3,5 +3,4 @@ tmp
 .python-version
 github-action-test/lambda/tasks/python/__pycache__
 __pycache__/
-uv.lock
 .vscode

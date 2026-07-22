@@ -13,11 +13,16 @@ logging.getLogger("urllib3").propagate = False
 from .tester import AssertionEvaluator, ExecutionTestSucceeded, ExecutionTestFailed, Resource, InvalidResource, Response, ErrorResponse, InvalidResourceError
 from .driver import Driver
 from .models import Request, ConcurrentTest
+from .logger import log_group
 
 RUNTIME_HOST_CONNECTION_TIMEOUT = 120
 TIMEOUT_FOR_CONTAINER_TO_BE_READY_IN_SECONDS = 5
 # Delay in seconds before polling container readiness. Increase in slower CI environments.
 CONTAINER_READY_DELAY_SECS = float(os.environ.get("CONTAINER_READY_DELAY_SECS", "1"))
+# Timeout for HTTP requests to app containers (connect, read) in seconds.
+# Configure via REQUEST_TIMEOUT_SECS env var (default: 30s).
+_request_timeout_secs = float(os.environ.get("REQUEST_TIMEOUT_SECS", "30"))
+REQUEST_TIMEOUT = (5, _request_timeout_secs)
 
 # Lambda Runtime Interface header names
 HEADER_CLIENT_CONTEXT = "Lambda-Runtime-Client-Context"
@@ -117,16 +122,31 @@ class DockerDriver(Driver):
                 batch_results = self._execute_batch(batch, local_address, concurrent_test.name, batch_idx)
                 all_results.extend(batch_results)
             
+            # Dump container logs on failure (always, not just in debug mode)
+            has_failures = any(isinstance(r, ExecutionTestFailed) for r in all_results)
+            if has_failures:
+                self._dump_container_logs(container_id, concurrent_test.name)
+            elif self.logger.isEnabledFor(logging.DEBUG):
+                self._dump_container_logs(container_id, concurrent_test.name)
+
             return all_results
             
         finally:
             if container_id:
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    logs_result = subprocess.run(["docker", "logs", container_id], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                    self.logger.debug("docker logs:\n%s", logs_result.stdout.decode())
                 docker_kill_cmd = ["docker", "kill", container_id]
                 subprocess.run(docker_kill_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
                 self.logger.debug("Killed container [container_id = {}]".format(container_id))
+
+    def _dump_container_logs(self, container_id: str, test_name: str):
+        """Capture and print container logs, using GHA grouping if available."""
+        logs_result = subprocess.run(
+            ["docker", "logs", container_id],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+        logs_output = logs_result.stdout.decode()
+
+        with log_group(f"Container logs for {test_name}"):
+            print(logs_output[-5000:] if len(logs_output) > 5000 else logs_output)
 
     def _execute_batch(self, batch: List[Request], local_address: str, test_name: str, batch_idx: int) -> List:
         """Execute a batch of requests concurrently."""
@@ -193,7 +213,8 @@ class DockerDriver(Driver):
             method=request.method,
             url=f"http://{local_address}{request.path}",
             data=req_bytes,
-            headers=headers
+            headers=headers,
+            timeout=REQUEST_TIMEOUT,
         )
         return self._render_response(response.content)
 
@@ -402,7 +423,8 @@ class DockerDriver(Driver):
                 response = requests.post(
                     url="http://{}/2015-03-31/functions/function/invocations".format(local_address),
                     data=req_bytes,
-                    headers=headers
+                    headers=headers,
+                    timeout=REQUEST_TIMEOUT,
                 )
                 return self._render_response(response.content)
             except requests.exceptions.ConnectionError:

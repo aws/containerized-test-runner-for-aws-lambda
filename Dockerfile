@@ -1,21 +1,14 @@
 FROM python:3.14-slim
 
-# Install Docker CLI
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    && curl -fsSL https://get.docker.com -o get-docker.sh \
-    && sh get-docker.sh \
-    && rm get-docker.sh \
-    && rm -rf /var/lib/apt/lists/*
+# Copy Docker CLI from the official image (pinned version, no curl | sh)
+COPY --from=docker:cli /usr/local/bin/docker /usr/local/bin/docker
 
 WORKDIR /app
 
 # Copy the test runner source
 COPY . /app
 
-# Install the test runner
+# Install the test runner (pip auto-downloads hatchling as the build backend)
 RUN pip install --no-cache-dir .
 
 # Copy entrypoint script

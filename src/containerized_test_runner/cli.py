@@ -9,6 +9,7 @@ from socket import gethostname
 from containerized_test_runner import Runner, ExecutionTestResults, SuiteLoader, ScenarioLoader, ExecutionTestSucceeded, ExecutionTestFailed
 from .docker import DockerDriver
 from .docker_webapp import DockerWebAppDriver
+from .logger import setup_logger, notice, log_group
 
 logger = logging.getLogger("test-harness")
 
@@ -48,6 +49,13 @@ def write_test_summary(run_results):
         if not does_suite_have_tests(suite_results):
             totals["empty_suites"].append(suite_name)
 
+    # Print structured failure details
+    if totals["failed"] > 0:
+        with log_group("Failure Details"):
+            for (suite_name, suite_results) in run_results:
+                for failure in suite_results.failed:
+                    _print_failure_detail(suite_name, failure)
+
     print("")
     if len(totals["failed_names"]) > 0:
         print("Failed Tests")
@@ -76,6 +84,29 @@ def write_test_summary(run_results):
         0,
         totals["skipped"],
     ))
+
+    # Emit annotations for pass/fail
+    if totals["failed"] > 0:
+        for (suite_name, suite_results) in run_results:
+            for failure in suite_results.failed:
+                test_name = failure.test.get("name", "unknown") if hasattr(failure, "test") else "unknown"
+                msg = getattr(failure, "msg", str(failure)) or str(failure)
+                logger.error(f"{suite_name}/{test_name}: {msg}")
+    else:
+        notice(f"{totals['succeeded']} passed, {totals['skipped']} skipped")
+
+
+def _print_failure_detail(suite_name, failure):
+    """Print a structured failure block for a single test failure."""
+    test_name = failure.test.get("name", "unknown") if hasattr(failure, "test") else "unknown"
+    fail_type = getattr(failure, "type", "unknown")
+    msg = getattr(failure, "msg", str(failure)) or str(failure)
+
+    print("")
+    print(f"  FAILED: {suite_name}/{test_name}")
+    print(f"  Type:   {fail_type}")
+    print(f"  Reason: {msg}")
+    print("")
 
 
 def create_parser():
@@ -184,10 +215,7 @@ def main():
 
     args = parser.parse_args()
 
-    logging.Formatter.converter = time.gmtime
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG if args.debug else logging.INFO,
-                        format='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S.%Z')
+    setup_logger(debug=args.debug)
     execute_tests(args)
 
 if __name__ == "__main__":

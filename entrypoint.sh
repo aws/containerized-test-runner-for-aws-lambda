@@ -1,4 +1,4 @@
 #!/bin/bash
 set -e
 
-python /app/run.py
+python -m containerized_test_runner.main
