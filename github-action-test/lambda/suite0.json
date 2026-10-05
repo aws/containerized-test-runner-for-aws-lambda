@@ -33,6 +33,25 @@
                     }
                 }
             ]
+        },
+        {
+            "name": "test_client_context_custom_is_delivered",
+            "handler": "core.echoClientContextCustom",
+            "request": {},
+            "clientContext": {
+                "custom": {
+                    "value": "hello"
+                }
+            },
+            "assertions": [
+                {
+                    "response": {
+                        "custom": {
+                            "value": "hello"
+                        }
+                    }
+                }
+            ]
         }
     ]
 }

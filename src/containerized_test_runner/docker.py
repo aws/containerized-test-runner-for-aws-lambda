@@ -1,4 +1,5 @@
 import logging
+import base64
 import json
 import re
 import subprocess
@@ -24,8 +25,8 @@ CONTAINER_READY_DELAY_SECS = float(os.environ.get("CONTAINER_READY_DELAY_SECS", 
 _request_timeout_secs = float(os.environ.get("REQUEST_TIMEOUT_SECS", "30"))
 REQUEST_TIMEOUT = (5, _request_timeout_secs)
 
-# Lambda Runtime Interface header names
-HEADER_CLIENT_CONTEXT = "Lambda-Runtime-Client-Context"
+# Lambda Runtime Interface header names.
+HEADER_CLIENT_CONTEXT = "X-Amz-Client-Context"
 HEADER_COGNITO_IDENTITY_ID = "Lambda-Runtime-Cognito-Identity-Id"
 HEADER_COGNITO_IDENTITY_POOL_ID = "Lambda-Runtime-Cognito-Identity-Pool-Id"
 HEADER_XRAY_TRACE = "Lambda-Runtime-XRay-Trace-Header"
@@ -188,7 +189,9 @@ class DockerDriver(Driver):
         headers.update(request.headers)
         
         if request.client_context:
-            headers[HEADER_CLIENT_CONTEXT] = json.dumps(request.client_context)
+            headers[HEADER_CLIENT_CONTEXT] = base64.b64encode(
+                json.dumps(request.client_context).encode("utf-8")
+            ).decode("ascii")
         if request.cognito_identity:
             if 'cognitoIdentityId' in request.cognito_identity:
                 headers[HEADER_COGNITO_IDENTITY_ID] = request.cognito_identity['cognitoIdentityId']
@@ -311,7 +314,9 @@ class DockerDriver(Driver):
         headers = {}
         headers["Content-Type"] = request.content_type
         if client_context:
-            headers[HEADER_CLIENT_CONTEXT] = json.dumps(client_context)
+            headers[HEADER_CLIENT_CONTEXT] = base64.b64encode(
+                json.dumps(client_context).encode("utf-8")
+            ).decode("ascii")
         if 'cognitoIdentityId' in cognito_identity:
             headers[HEADER_COGNITO_IDENTITY_ID] = cognito_identity['cognitoIdentityId']
         if 'cognitoIdentityPoolId' in cognito_identity:
